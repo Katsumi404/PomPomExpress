@@ -1,0 +1,18 @@
+# Node.js Backend
+node_modules/
+package-lock.json
+server.js
+
+# React Native Frontend
+node_modules/
+ios/
+android/
+build/
+dist/
+*.log
+*.env
+
+# Miscellaneous
+.DS_Store
+.vscode/
+.idea/
