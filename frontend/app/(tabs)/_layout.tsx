@@ -32,6 +32,13 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="datatest"
+        options={{
+          title: 'Data Test',
+          // Omit the tabBarIcon property
+        }}
+      />
     </Tabs>
   );
 }
