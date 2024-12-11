@@ -1,7 +1,7 @@
 # Node.js Backend
 node_modules/
 package-lock.json
-server.js
+.env
 
 # React Native Frontend
 node_modules/
