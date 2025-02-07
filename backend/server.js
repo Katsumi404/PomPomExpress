@@ -9,7 +9,7 @@ app.use(express.json());
 // Include route files
 const authRoute = require('./routes/auth');
 const calculatorRoute = require('./routes/calculator');
-const dbRoute = require('./routes/auth');
+const dbRoute = require('./routes/db');
 const userRoute = require('./routes/user');
 
 // Use routes
