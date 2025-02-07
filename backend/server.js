@@ -10,14 +10,14 @@ app.use(express.json());
 const authRoute = require('./routes/auth');
 const calculatorRoute = require('./routes/calculator');
 const dbRoute = require('./routes/db');
-const userRoute = require('./routes/user');
+const userRoute = require('./routes/users');
 
 // Use routes
 const { connectDB } = require('./config/db');
-app.use('auth', authRoute);
+app.use('/auth', authRoute);
 app.use('/calculator', calculatorRoute);
-app.use('/auth', dbRoute);
-app.use('/calculator', userRoute);
+app.use('/db', dbRoute);
+app.use('/users', usersRoute);
 
 // makes sure the requests can be listened to by react expo
 app.use(cors({
