@@ -1,4 +1,6 @@
-import { StyleSheet, Image, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { StyleSheet, Image, Platform, View } from 'react-native';
 
 import { Collapsible } from '@/components/Collapsible';
 import { ExternalLink } from '@/components/ExternalLink';
@@ -8,6 +10,77 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function TabTwoScreen() {
+  const [listings, setListings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchListings = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get('http://10.202.134.48:3000/db', {
+        params: { 
+          limit: 10 // Increased to show more listings
+        },
+        timeout: 5000, 
+      });
+      setListings(response.data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Fetch error:', error);
+      setError('Failed to fetch listings. Please try again later.');
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
+  const ListingCard = ({ listing }) => (
+    <ThemedView style={styles.card}>
+      <ThemedText type="title" style={styles.listingTitle}>
+        {listing.name}
+      </ThemedText>
+      
+      <ThemedView style={styles.detailsContainer}>
+        <ThemedText type="defaultSemiBold" style={styles.propertyType}>
+          {listing.property_type} · {listing.room_type}
+        </ThemedText>
+        
+        <ThemedText style={styles.description}>
+          {listing.description}
+        </ThemedText>
+
+        <ThemedView style={styles.statsContainer}>
+          <ThemedText>
+            {listing.bedrooms} bed{listing.bedrooms > 1 ? 's' : ''} · 
+            Accommodates {listing.accommodates}
+          </ThemedText>
+        </ThemedView>
+
+        <Collapsible title="More Details">
+          <ThemedView style={styles.additionalDetails}>
+            <ThemedText>• Access: {listing.access}</ThemedText>
+            <ThemedText>• Transit: {listing.transit}</ThemedText>
+            <ThemedText>• House Rules: {listing.house_rules}</ThemedText>
+            <ThemedText>
+              • Cancellation: {listing.cancellation_policy}
+            </ThemedText>
+            <ThemedText>
+              • Minimum Stay: {listing.minimum_nights} nights
+            </ThemedText>
+          </ThemedView>
+        </Collapsible>
+
+        <ExternalLink 
+          style={styles.linkButton}
+          href={listing.listing_url}>
+          View on Airbnb
+        </ExternalLink>
+      </ThemedView>
+    </ThemedView>
+  );
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -18,79 +91,27 @@ export default function TabTwoScreen() {
           name="chevron.left.forwardslash.chevron.right"
           style={styles.headerImage}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
+      }
+    >
+      {isLoading ? (
+        <ThemedView style={styles.centerContent}>
+          <ThemedText>Loading listings...</ThemedText>
+        </ThemedView>
+      ) : error ? (
+        <ThemedView style={styles.centerContent}>
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
+        </ThemedView>
+      ) : (
+        <ThemedView style={styles.container}>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText type="title">Available Listings</ThemedText>
+          </ThemedView>
+          
+          {listings.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} />
+          ))}
+        </ThemedView>
+      )}
     </ParallaxScrollView>
   );
 }
@@ -102,8 +123,62 @@ const styles = StyleSheet.create({
     left: -35,
     position: 'absolute',
   },
+  container: {
+    padding: 16,
+  },
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
+    marginBottom: 16,
   },
+  card: {
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  listingTitle: {
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  detailsContainer: {
+    gap: 12,
+  },
+  propertyType: {
+    color: '#666',
+  },
+  description: {
+    lineHeight: 20,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginVertical: 8,
+  },
+  additionalDetails: {
+    gap: 8,
+    paddingVertical: 8,
+  },
+  linkButton: {
+    marginTop: 16,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  errorText: {
+    color: 'red',
+  }
 });

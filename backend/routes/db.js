@@ -1,18 +1,36 @@
 const express = require('express');
 const router = express.Router();
+const { client } = require('../config/db'); // Import the native MongoDB client
 
-// Define a route
-router.get('/', (req, res) => {
-    res.send('this is product route');// this gets executed when user visit http://localhost:3000/products
+// Reference the database and collection
+const dbName = 'sample_airbnb'; // Replace with your database name
+const collectionName = 'listingsAndReviews';
+
+// Route to get all listings (limited to 10 for testing)
+router.get('/', async (req, res) => {
+  try {
+    const listings = await client.db(dbName).collection(collectionName).find({}).limit(10).toArray();
+    res.json(listings);
+    console.log(`✅ Fetched Listings`)
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch listings" });
+    console.log(`❌ Listings not able to fetch`)
+  }
 });
 
-router.get('/101', (req, res) => {
-    res.send('this is product 101 route');// this gets executed when user visit http://localhost:3000/product/101
+// Route to get a single listing by ID
+router.get('/:id', async (req, res) => {
+  try {
+    // Make sure to convert the id to ObjectId if needed:
+    const { ObjectId } = require('mongodb');
+    const listing = await client.db(dbName).collection(collectionName).findOne({ _id: new ObjectId(req.params.id) });
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+    res.json(listing);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch listing" });
+  }
 });
 
-router.get('/102', (req, res) => {
-    res.send('this is product 102 route');// this gets executed when user visit http://localhost:3000/product/102
-});
-
-// export the router module so that server.js file can use it
 module.exports = router;

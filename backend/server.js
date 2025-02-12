@@ -10,7 +10,7 @@ app.use(express.json());
 const authRoute = require('./routes/auth');
 const calculatorRoute = require('./routes/calculator');
 const dbRoute = require('./routes/db');
-const userRoute = require('./routes/users');
+const usersRoute = require('./routes/users');
 
 // Use routes
 const { connectDB } = require('./config/db');
@@ -24,8 +24,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:8081',
-    'http://10.202.135.206:8081',
-    'exp://10.202.135.206:8081'
+    'http://10.202.134.48:3000',
+    'http://10.202.134.48:8081'
   ],
   methods: ['GET', 'POST'], // Add any methods that your API will support
   allowedHeaders: ['Content-Type'],
@@ -39,5 +39,5 @@ connectDB()
     });
   })
   .catch(err => {
-    console.error("❌ Failed to connect to MongoDB", err);
+    console.error(`❌ Failed to connect to MongoDB`, err);
   });
