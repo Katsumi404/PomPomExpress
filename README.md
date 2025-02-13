@@ -5,4 +5,4 @@ Final Year Project which is a Honkai Star Rail database, and character optomizer
 In the terminal, go to the backend folder of the project, then run the command `node ./server.js`
 
 ## Frontend Startup
-In the terminal, go to the frontend folder of the project, and run the command `npm start`
+In the terminal, go to the frontend folder of the project, and run the command `npm start --tunnel`
