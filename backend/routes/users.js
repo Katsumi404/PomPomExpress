@@ -1,18 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const passport = require('passport');
+const User = require('../models/Users');
 
-// Define a route
-router.get('/', (req, res) => {
-    res.send('this is product route');// this gets executed when user visit http://localhost:3000/products
-});
-
-router.get('/101', (req, res) => {
-    res.send('this is product 101 route');// this gets executed when user visit http://localhost:3000/product/101
-});
-
-router.get('/102', (req, res) => {
-    res.send('this is product 102 route');// this gets executed when user visit http://localhost:3000/product/102
-});
-
-// export the router module so that server.js file can use it
-module.exports = router;
+// Get all users (protected admin route example)
+router.get('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+      // You might want to add role-based authorization here
+      const users = await User.find().select('-password');
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
+  // Other user routes...
+  
+  module.exports = router;
