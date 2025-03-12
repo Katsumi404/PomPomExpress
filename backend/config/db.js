@@ -10,6 +10,8 @@ const client = new MongoClient(connectionString, {
     deprecationErrors: true,
   }
 });
+
+
 async function connectDB() {
   try {
     // Connect the client to the server	(optional starting in v4.7)

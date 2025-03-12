@@ -28,8 +28,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:8081',
-    'http://10.202.129.194:3000',
-    'http://10.202.129.194:8081'
+    'http://10.202.132.225:3000',
+    'http://10.202.132.225:8081'
   ],
   methods: ['GET', 'POST'], // Add any methods that your API will support
   allowedHeaders: ['Content-Type'],

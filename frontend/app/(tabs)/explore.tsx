@@ -17,7 +17,7 @@ export default function TabTwoScreen() {
   const fetchListings = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('http://10.202.129.194:3000/db', {
+      const response = await axios.get('http://10.202.132.225:3000/db', {
         params: { 
           limit: 10 // Increased to show more listings
         },
