@@ -44,7 +44,8 @@ UserSchema.methods.matchPassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Create the model
-const User = mongoose.model('User', UserSchema);
+// Connect to UserDataDB explicitly and create the User model in that database
+const userDB = mongoose.connection.useDb('UserDataDB');
+const User = userDB.model('User', UserSchema);
 
 module.exports = User;

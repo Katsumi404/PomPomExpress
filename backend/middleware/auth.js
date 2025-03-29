@@ -1,4 +1,3 @@
-// middleware/auth.js
 const passport = require('passport');
 
 exports.protect = (req, res, next) => {
@@ -16,7 +15,7 @@ exports.protect = (req, res, next) => {
   })(req, res, next);
 };
 
-// Optional: Role-based authorization middleware
+// Role-based authorization middleware
 exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user.role || !roles.includes(req.user.role)) {

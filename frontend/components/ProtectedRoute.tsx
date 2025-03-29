@@ -16,6 +16,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps): JSX.Element |
     // Wait until everything is loaded (loading finished and router is ready)
     if (!loading && !isReady) {
       setIsReady(true);
+      console.log('✅ User authenticated:', user);
     }
 
     if (!loading && !user && isReady) {

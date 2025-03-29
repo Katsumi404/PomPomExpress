@@ -3,10 +3,10 @@ const router = express.Router();
 const passport = require('passport');
 const User = require('../models/Users');
 
-// Get all users (protected admin route example)
+// Get all users
 router.get('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-      // You might want to add role-based authorization here
+      // Role-based authorization goes here
       const users = await User.find().select('-password');
       res.json(users);
     } catch (error) {

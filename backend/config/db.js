@@ -16,7 +16,6 @@ async function connectDB() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-    // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("✅ Pinged your deployment. You successfully connected to MongoDB!");
     return client;
@@ -26,6 +25,7 @@ async function connectDB() {
   }
 }
 
+
 async function connectMongoose() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
@@ -33,6 +33,33 @@ async function connectMongoose() {
   } catch (error) {
     console.error("❌ Mongoose connection error:", error);
     throw error;
+  }
+}
+
+// Database initialization function
+async function initializeDatabase() {
+  try {
+    const db = client.db('HonkaiStarRailDB');
+
+    // Create collections if they don't exist
+    await db.createCollection('characters');
+    await db.createCollection('lightCones');
+    await db.createCollection('relics');
+    await db.createCollection('materials');
+
+    // Create indexes for common queries
+    await db.collection('characters').createIndex({ name: 1 }, { unique: true });
+    await db.collection('characters').createIndex({ rarity: 1 });
+    await db.collection('characters').createIndex({ path: 1 });
+    await db.collection('characters').createIndex({ element: 1 });
+
+    await db.collection('lightCones').createIndex({ name: 1 }, { unique: true });
+    await db.collection('lightCones').createIndex({ path: 1 });
+    await db.collection('lightCones').createIndex({ rarity: 1 });
+
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database', error);
   }
 }
 
