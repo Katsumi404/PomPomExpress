@@ -20,7 +20,7 @@ export default function CharactersScreen() {
     try {
       setIsLoading(true);
       // Update the URL to match your API endpoint
-      const response = await axios.get('http://192.168.68.124:3000/getCharacters', {
+      const response = await axios.get('http://192.168.68.124:3000/db/getCharacters', {
         timeout: 5000,
       });
       setCharacters(response.data);
@@ -39,7 +39,7 @@ export default function CharactersScreen() {
   const fetchCharacterDetails = async (id) => {
     try {
       // Update the URL to match your API endpoint for fetching a single character
-      const response = await axios.get(`http://192.168.68.124:3000/getCharacters/${id}`, {
+      const response = await axios.get(`http://192.168.68.124:3000/db/getCharacters/${id}`, {
         timeout: 5000,
       });
       setSelectedCharacter(response.data);
