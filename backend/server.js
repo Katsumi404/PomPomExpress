@@ -19,7 +19,7 @@ app.use('/db', dbRoute);
 app.use('/users', usersRoute);
 
 // Database connections
-const { connectDB, initializeDatabase, insertMaterialsData } = require('./config/db');
+const { connectDB } = require('./config/db');
 const { connectMongoose } = require('./config/db');
 
 // makes sure the requests can be listened to by react expo
