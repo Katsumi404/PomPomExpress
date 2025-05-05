@@ -73,6 +73,7 @@ export default function CharactersScreen() {
 
   const CharacterDetailsModal = ({ character, visible, onClose }) => {
     if (!character) return null;
+    
     return (
       <Modal
         animationType="slide"
@@ -86,6 +87,7 @@ export default function CharactersScreen() {
               <ThemedText type="title" style={styles.modalTitle}>
                 {character.name}
               </ThemedText>
+              
               {character.imageUrl ? (
                 <View style={styles.imageContainer}>
                   <Image 
@@ -95,8 +97,79 @@ export default function CharactersScreen() {
                   />
                 </View>
               ) : null}
-              {/* ... existing modal content unchanged ... */}
+              
+              <ThemedView style={styles.detailsContainer}>
+                <ThemedView style={styles.detailRow}>
+                  <ThemedText type="defaultSemiBold">Element:</ThemedText>
+                  <ThemedText>{character.element}</ThemedText>
+                </ThemedView>
+                
+                <ThemedView style={styles.detailRow}>
+                  <ThemedText type="defaultSemiBold">Path:</ThemedText>
+                  <ThemedText>{character.path}</ThemedText>
+                </ThemedView>
+                
+                <ThemedView style={styles.detailRow}>
+                  <ThemedText type="defaultSemiBold">Rarity:</ThemedText>
+                  <ThemedText>{"★".repeat(character.rarity)}</ThemedText>
+                </ThemedView>
+                
+                {character.voiceActor ? (
+                  <ThemedView style={styles.detailRow}>
+                    <ThemedText type="defaultSemiBold">Voice Actor:</ThemedText>
+                    <ThemedText>{character.voiceActor}</ThemedText>
+                  </ThemedView>
+                ) : null}
+                
+                {character.description ? (
+                  <ThemedView style={styles.descriptionContainer}>
+                    <ThemedText type="defaultSemiBold">Description:</ThemedText>
+                    <ThemedText style={styles.description}>{character.description}</ThemedText>
+                  </ThemedView>
+                ) : null}
+                
+                {character.abilities && character.abilities.length > 0 ? (
+                  <Collapsible title="Abilities">
+                    <ThemedView style={styles.collapsibleContent}>
+                      {character.abilities.map((ability, index) => (
+                        <ThemedText key={index}>• {ability}</ThemedText>
+                      ))}
+                    </ThemedView>
+                  </Collapsible>
+                ) : null}
+                
+                {character.baseStats && Object.keys(character.baseStats).length > 0 ? (
+                  <Collapsible title="Base Stats">
+                    <ThemedView style={styles.collapsibleContent}>
+                      {Object.entries(character.baseStats).map(([stat, value]) => (
+                        <ThemedText key={stat}>• {stat}: {value}</ThemedText>
+                      ))}
+                    </ThemedView>
+                  </Collapsible>
+                ) : null}
+                
+                {character.tags && character.tags.length > 0 ? (
+                  <ThemedView style={styles.tagsContainer}>
+                    <ThemedText type="defaultSemiBold">Tags:</ThemedText>
+                    <ThemedView style={styles.tags}>
+                      {character.tags.map((tag, index) => (
+                        <ThemedView key={index} style={styles.tag}>
+                          <ThemedText style={styles.tagText}>{tag}</ThemedText>
+                        </ThemedView>
+                      ))}
+                    </ThemedView>
+                  </ThemedView>
+                ) : null}
+                
+                {character.releaseDate ? (
+                  <ThemedView style={styles.detailRow}>
+                    <ThemedText type="defaultSemiBold">Release Date:</ThemedText>
+                    <ThemedText>{new Date(character.releaseDate).toLocaleDateString()}</ThemedText>
+                  </ThemedView>
+                ) : null}
+              </ThemedView>
             </ScrollView>
+            
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <ThemedText style={styles.closeButtonText}>Close</ThemedText>
             </TouchableOpacity>
