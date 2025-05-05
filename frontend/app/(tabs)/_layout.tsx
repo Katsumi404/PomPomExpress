@@ -51,21 +51,34 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="index"
+          name="homeScreen"
           options={{
             title: 'Home',
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
           }}
         />
         <Tabs.Screen
-          name="character"
+          name="characterScreen"
           options={{
-            title: 'Character Screen',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+            title: 'Characters',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="lightConeScreen"
+          options={{
+            title: 'LightCones',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="profileScreen"
+          options={{
+            title: 'Profile',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle.fill" color={color} />,
           }}
         />
       </Tabs>
     </ProtectedRoute>
   );
 }
-

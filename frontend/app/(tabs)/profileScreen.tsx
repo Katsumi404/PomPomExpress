@@ -1,17 +1,34 @@
 import React, { useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Button, ActivityIndicator } from 'react-native';
+import { StyleSheet, Image, Button, ActivityIndicator, View } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
 
-export default function ProfileScreen() {
-  const { user, loading, getProfile, logout } = useAuth();
+// Define the user interface
+interface User {
+  name: string;
+  email: string;
+  profilePicture: string;
+}
+
+// Define the auth context interface
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  getProfile: () => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+export default function ProfileScreen(): JSX.Element {
+  const { user, loading, getProfile, logout } = useAuth() as AuthContextType;
   const colorScheme = useColorScheme();
   const themeColors = Colors[colorScheme];
 
   useEffect(() => {
     if (!user && !loading) {
-      getProfile().catch((error) => {
+      getProfile().catch((error: Error) => {
         console.error('Failed to fetch user profile:', error);
       });
     }
@@ -19,27 +36,36 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: themeColors.background }]}> 
+      <ThemedView style={styles.container}> 
         <ActivityIndicator size="large" color={themeColors.tint} />
-      </View>
+      </ThemedView>
     );
   }
 
   if (!user) {
     return (
-      <View style={[styles.container, { backgroundColor: themeColors.background }]}> 
-        <Text style={[styles.errorMessage, { color: Colors.danger }]}>User not found. Please log in again.</Text>
-      </View>
+      <ThemedView style={styles.container}> 
+        <ThemedText style={[styles.errorMessage, { color: Colors.danger }]}>
+          User not found. Please log in again.
+        </ThemedText>
+      </ThemedView>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background }]}> 
+    <ThemedView style={styles.container}> 
       <View style={styles.header}>
-        <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
+        <Image 
+          source={{ uri: user.profilePicture }} 
+          style={styles.profileImage} 
+        />
         <View style={styles.userInfo}>
-          <Text style={[styles.userName, { color: themeColors.text }]}>{user.name}</Text>
-          <Text style={[styles.userEmail, { color: themeColors.secondaryText }]}>{user.email}</Text>
+          <ThemedText type="title" style={styles.userName}>
+            {user.name}
+          </ThemedText>
+          <ThemedText type="defaultSemiBold" style={styles.userEmail}>
+            {user.email}
+          </ThemedText>
         </View>
       </View>
       
@@ -56,7 +82,7 @@ export default function ProfileScreen() {
           color={Colors.danger}
         />
       </View>
-    </View>
+    </ThemedView>
   );
 }
 
@@ -81,7 +107,6 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 22,
-    fontWeight: 'bold',
   },
   userEmail: {
     fontSize: 14,

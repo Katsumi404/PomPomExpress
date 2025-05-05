@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView, Image } from 'react-native';
 import axios from 'axios';
 
 import { Collapsible } from '@/components/Collapsible';
@@ -9,67 +9,148 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
-export default function CharactersScreen() {
-  const [characters, setCharacters] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedCharacter, setSelectedCharacter] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
+// Define interfaces for our data structures
+interface Stats {
+  [key: string]: number;
+}
 
-  const fetchCharacters = async () => {
+interface LightCone {
+  _id: string;
+  name: string;
+  path: string;
+  rarity: number;
+  description?: string;
+  stats?: Stats;
+  tags?: string[];
+  releaseDate?: string;
+  imageUrl?: string;
+  schemaVersion?: string;
+  updatedAt?: string | null;
+}
+
+// Props interfaces
+interface LightConeCardProps {
+  lightCone: LightCone;
+}
+
+interface LightConeDetailsModalProps {
+  lightCone: LightCone | null;
+  visible: boolean;
+  onClose: () => void;
+}
+
+interface PaginationControlsProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+export default function LightConesScreen(): JSX.Element {
+  const [lightCones, setLightCones] = useState<LightCone[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedLightCone, setSelectedLightCone] = useState<LightCone | null>(null);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const itemsPerPage = 10; // Number of items to display per page
+
+  const fetchLightCones = async (): Promise<void> => {
     try {
       setIsLoading(true);
       // Update the URL to match your API endpoint
-      const response = await axios.get('http://10.202.134.121:3000/db/getCharacters', {
+      const response = await axios.get<LightCone[]>('http://10.202.134.121:3000/db/getLightCones', {
         timeout: 5000,
       });
-      setCharacters(response.data);
+      setLightCones(response.data);
+      // Calculate total pages
+      setTotalPages(Math.ceil(response.data.length / itemsPerPage));
       setIsLoading(false);
     } catch (error) {
       console.error('Fetch error:', error);
-      setError('Failed to fetch characters. Please try again later.');
+      setError('Failed to fetch light cones. Please try again later.');
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCharacters();
+    fetchLightCones();
   }, []);
 
-  const fetchCharacterDetails = async (id) => {
+  const fetchLightConeDetails = async (id: string): Promise<void> => {
     try {
-      // Update the URL to match your API endpoint for fetching a single character
-      const response = await axios.get(`http://10.202.134.121:3000/db/getCharacters/${id}`, {
+      // Update the URL to match your API endpoint for fetching a single light cone
+      const response = await axios.get<LightCone>(`http://10.202.134.121:3000/db/getLightCones/${id}`, {
         timeout: 5000,
       });
-      setSelectedCharacter(response.data);
+      setSelectedLightCone(response.data);
       setModalVisible(true);
     } catch (error) {
-      console.error('Fetch character details error:', error);
-      setError('Failed to fetch character details. Please try again later.');
+      console.error('Fetch light cone details error:', error);
+      setError('Failed to fetch light cone details. Please try again later.');
     }
   };
 
-  const CharacterCard = ({ character }) => (
-    <TouchableOpacity onPress={() => fetchCharacterDetails(character._id)}>
+  // Handle page change
+  const handlePageChange = (page: number): void => {
+    setCurrentPage(page);
+  };
+
+  // Get current page items
+  const getCurrentPageItems = (): LightCone[] => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return lightCones.slice(startIndex, endIndex);
+  };
+
+  const LightConeCard = ({ lightCone }: LightConeCardProps): JSX.Element => (
+    <TouchableOpacity onPress={() => fetchLightConeDetails(lightCone._id)}>
       <ThemedView style={styles.card}>
-        <ThemedText type="title" style={styles.characterName}>
-          {character.name}
+        <ThemedText type="title" style={styles.lightConeName}>
+          {lightCone.name}
         </ThemedText>
         <ThemedView style={styles.basicInfo}>
-          <ThemedText style={styles.element}>
-            {character.element} • {character.path}
+          <ThemedText style={styles.path}>
+            Path: {lightCone.path}
           </ThemedText>
           <ThemedText style={styles.rarity}>
-            {"★".repeat(character.rarity)}
+            {"★".repeat(lightCone.rarity)}
           </ThemedText>
         </ThemedView>
       </ThemedView>
     </TouchableOpacity>
   );
 
-  const CharacterDetailsModal = ({ character, visible, onClose }) => {
-    if (!character) return null;
+  const PaginationControls = ({ currentPage, totalPages, onPageChange }: PaginationControlsProps): JSX.Element => (
+    <ThemedView style={styles.paginationContainer}>
+      <TouchableOpacity 
+        onPress={() => onPageChange(Math.max(1, currentPage - 1))} 
+        disabled={currentPage === 1}
+        style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+      >
+        <ThemedText style={styles.paginationButtonText}>Previous</ThemedText>
+      </TouchableOpacity>
+      
+      <ThemedView style={styles.paginationInfo}>
+        <ThemedText>
+          Page {currentPage} of {totalPages}
+        </ThemedText>
+      </ThemedView>
+      
+      <TouchableOpacity 
+        onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))} 
+        disabled={currentPage === totalPages}
+        style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+      >
+        <ThemedText style={styles.paginationButtonText}>Next</ThemedText>
+      </TouchableOpacity>
+    </ThemedView>
+  );
+
+  const LightConeDetailsModal = ({ lightCone, visible, onClose }: LightConeDetailsModalProps): JSX.Element | null => {
+    if (!lightCone) return null;
     
     return (
       <Modal
@@ -82,74 +163,52 @@ export default function CharactersScreen() {
           <ThemedView style={styles.modalContent}>
             <ScrollView>
               <ThemedText type="title" style={styles.modalTitle}>
-                {character.name}
+                {lightCone.name}
               </ThemedText>
               
-              {character.imageUrl ? (
+              {lightCone.imageUrl ? (
                 <View style={styles.imageContainer}>
                   <Image 
-                    source={{ uri: character.imageUrl }} 
-                    style={styles.characterImage} 
+                    source={{ uri: lightCone.imageUrl }} 
+                    style={styles.lightConeImage} 
                     resizeMode="contain"
                   />
                 </View>
               ) : null}
               
-              <ThemedView style={styles.detailsContainer}>
-                <ThemedView style={styles.detailRow}>
-                  <ThemedText type="defaultSemiBold">Element:</ThemedText>
-                  <ThemedText>{character.element}</ThemedText>
-                </ThemedView>
-                
+              <ThemedView style={styles.detailsContainer}>                
                 <ThemedView style={styles.detailRow}>
                   <ThemedText type="defaultSemiBold">Path:</ThemedText>
-                  <ThemedText>{character.path}</ThemedText>
+                  <ThemedText>{lightCone.path}</ThemedText>
                 </ThemedView>
                 
                 <ThemedView style={styles.detailRow}>
                   <ThemedText type="defaultSemiBold">Rarity:</ThemedText>
-                  <ThemedText>{"★".repeat(character.rarity)}</ThemedText>
+                  <ThemedText>{"★".repeat(lightCone.rarity)}</ThemedText>
                 </ThemedView>
                 
-                {character.voiceActor ? (
-                  <ThemedView style={styles.detailRow}>
-                    <ThemedText type="defaultSemiBold">Voice Actor:</ThemedText>
-                    <ThemedText>{character.voiceActor}</ThemedText>
-                  </ThemedView>
-                ) : null}
-                
-                {character.description ? (
+                {lightCone.description ? (
                   <ThemedView style={styles.descriptionContainer}>
                     <ThemedText type="defaultSemiBold">Description:</ThemedText>
-                    <ThemedText style={styles.description}>{character.description}</ThemedText>
+                    <ThemedText style={styles.description}>{lightCone.description}</ThemedText>
                   </ThemedView>
                 ) : null}
                 
-                {character.abilities && character.abilities.length > 0 ? (
-                  <Collapsible title="Abilities">
+                {lightCone.stats && Object.keys(lightCone.stats).length > 0 ? (
+                  <Collapsible title="Stats">
                     <ThemedView style={styles.collapsibleContent}>
-                      {character.abilities.map((ability, index) => (
-                        <ThemedText key={index}>• {ability}</ThemedText>
-                      ))}
-                    </ThemedView>
-                  </Collapsible>
-                ) : null}
-                
-                {character.baseStats && Object.keys(character.baseStats).length > 0 ? (
-                  <Collapsible title="Base Stats">
-                    <ThemedView style={styles.collapsibleContent}>
-                      {Object.entries(character.baseStats).map(([stat, value]) => (
+                      {Object.entries(lightCone.stats).map(([stat, value]) => (
                         <ThemedText key={stat}>• {stat}: {value}</ThemedText>
                       ))}
                     </ThemedView>
                   </Collapsible>
                 ) : null}
                 
-                {character.tags && character.tags.length > 0 ? (
+                {lightCone.tags && lightCone.tags.length > 0 ? (
                   <ThemedView style={styles.tagsContainer}>
                     <ThemedText type="defaultSemiBold">Tags:</ThemedText>
                     <ThemedView style={styles.tags}>
-                      {character.tags.map((tag, index) => (
+                      {lightCone.tags.map((tag, index) => (
                         <ThemedView key={index} style={styles.tag}>
                           <ThemedText style={styles.tagText}>{tag}</ThemedText>
                         </ThemedView>
@@ -158,10 +217,17 @@ export default function CharactersScreen() {
                   </ThemedView>
                 ) : null}
                 
-                {character.releaseDate ? (
+                {lightCone.releaseDate ? (
                   <ThemedView style={styles.detailRow}>
                     <ThemedText type="defaultSemiBold">Release Date:</ThemedText>
-                    <ThemedText>{new Date(character.releaseDate).toLocaleDateString()}</ThemedText>
+                    <ThemedText>{new Date(lightCone.releaseDate).toLocaleDateString()}</ThemedText>
+                  </ThemedView>
+                ) : null}
+
+                {lightCone.schemaVersion ? (
+                  <ThemedView style={styles.detailRow}>
+                    <ThemedText type="defaultSemiBold">Schema Version:</ThemedText>
+                    <ThemedText>{lightCone.schemaVersion}</ThemedText>
                   </ThemedView>
                 ) : null}
               </ThemedView>
@@ -183,14 +249,14 @@ export default function CharactersScreen() {
         <IconSymbol
           size={310}
           color="#808080"
-          name="star.fill"
+          name="sparkles"
           style={styles.headerImage}
         />
       }
     >
       {isLoading ? (
         <ThemedView style={styles.centerContent}>
-          <ThemedText>Loading characters...</ThemedText>
+          <ThemedText>Loading light cones...</ThemedText>
         </ThemedView>
       ) : error ? (
         <ThemedView style={styles.centerContent}>
@@ -199,17 +265,24 @@ export default function CharactersScreen() {
       ) : (
         <ThemedView style={styles.container}>
           <ThemedView style={styles.titleContainer}>
-            <ThemedText type="title">Honkai Star Rail Characters</ThemedText>
+            <ThemedText type="title">Honkai Star Rail Light Cones</ThemedText>
           </ThemedView>
           
-          {characters.map((character) => (
-            <CharacterCard key={character._id} character={character} />
+          {getCurrentPageItems().map((lightCone) => (
+            <LightConeCard key={lightCone._id} lightCone={lightCone} />
           ))}
+          
+          {/* Pagination controls */}
+          <PaginationControls 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
         </ThemedView>
       )}
       
-      <CharacterDetailsModal 
-        character={selectedCharacter}
+      <LightConeDetailsModal 
+        lightCone={selectedLightCone}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
       />
@@ -248,7 +321,7 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  characterName: {
+  lightConeName: {
     fontSize: 18,
     marginBottom: 4,
   },
@@ -257,7 +330,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  element: {
+  path: {
     fontSize: 14,
   },
   rarity: {
@@ -272,6 +345,31 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: 'red',
+  },
+  // Pagination styles
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  paginationButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+  },
+  paginationButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  paginationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   // Modal styles
   modalOverlay: {
@@ -306,7 +404,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  characterImage: {
+  lightConeImage: {
     width: 200,
     height: 200,
     borderRadius: 8,

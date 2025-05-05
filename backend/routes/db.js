@@ -39,7 +39,7 @@ router.post('/addCharacters', async (req, res) => {
 router.get('/getCharacters', async (req, res) => {
   try {
     const charactersCollection = getCharactersCollection();
-    const characters = await charactersCollection.find({}).limit(10).toArray();
+    const characters = await charactersCollection.find({}).toArray();
     res.json(characters);
     console.log(`✅ Fetched Characters`);
   } catch (error) {
@@ -94,7 +94,7 @@ router.post('/addLightCones', async (req, res) => {
 router.get('/getLightCones', async (req, res) => {
   try {
     const lightConesCollection = getLightConesCollection();
-    const lightCones = await lightConesCollection.find({}).limit(10).toArray();
+    const lightCones = await lightConesCollection.find({}).toArray();
     res.json(lightCones);
     console.log(`✅ Fetched Light Cones`);
   } catch (error) {
@@ -104,7 +104,7 @@ router.get('/getLightCones', async (req, res) => {
 });
 
 // Route to get a single light cone by ID
-router.get('/geLightCones/:id', async (req, res) => {
+router.get('/getLightCones/:id', async (req, res) => {
   try {
     const lightConesCollection = getLightConesCollection();
     const lightCone = await lightConesCollection.findOne({ _id: new ObjectId(req.params.id) });

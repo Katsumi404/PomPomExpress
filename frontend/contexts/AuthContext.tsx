@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      const response = await axios.post<{ token: string; user: User }>('http://192.168.68.124:3000/auth/register', {
+      const response = await axios.post<{ token: string; user: User }>('http://10.202.134.121:3000/auth/register', {
         name,
         email,
         password
@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      const response = await axios.post<{ token: string; user: User }>('http://192.168.68.124:3000/auth/login', {
+      const response = await axios.post<{ token: string; user: User }>('http://10.202.134.121:3000/auth/login', {
         email,
         password
       });
@@ -157,7 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const getProfile = async (): Promise<User> => {
     try {
       setLoading(true);
-      const response = await axios.get<User>('http://192.168.68.124:3000/auth/profile');
+      const response = await axios.get<User>('http://10.202.134.121:3000/auth/profile');
       setUser(response.data);
       await AsyncStorage.setItem('user', JSON.stringify(response.data));
       return response.data;

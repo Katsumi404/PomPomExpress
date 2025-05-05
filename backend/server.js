@@ -27,8 +27,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:8081',
-    'http://10.202.139.27:3000',
-    'http://10.202.139.27:8081'
+    'http://10.202.134.121:3000',
+    'http://10.202.134.121:8081'
   ],
   methods: ['GET', 'POST'], 
   allowedHeaders: ['Content-Type'],
