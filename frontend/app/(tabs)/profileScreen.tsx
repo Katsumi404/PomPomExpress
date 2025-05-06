@@ -70,7 +70,7 @@ export default function ProfileScreen(): JSX.Element {
         <IconSymbol
           size={50}
           color={themeColors.tint}
-          name="user-circle" // Placeholder icon name, change as needed
+          name="user-circle" 
           style={styles.profileIcon}
         />
         <View style={styles.userInfo}>

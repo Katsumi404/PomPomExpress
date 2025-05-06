@@ -1,3 +1,7 @@
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs(['Text strings must be rendered within a <Text> component.']);
+
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -8,7 +12,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { ConfigProvider } from '@/contexts/ConfigContext'; 
+import { ConfigProvider } from '@/contexts/ConfigContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -30,18 +34,18 @@ export default function RootLayout() {
   }
 
   return (
-    <ConfigProvider> 
-       <AuthProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-            <Stack.Screen name="login" options={{ title: 'Login' }} />
-            <Stack.Screen name="register" options={{ title: 'Register' }} />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </AuthProvider>
-    </ConfigProvider> 
+    <ConfigProvider>
+        <AuthProvider>
+         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+           <Stack>
+             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+             <Stack.Screen name="+not-found" />
+             <Stack.Screen name="login" options={{ title: 'Login' }} />
+             <Stack.Screen name="register" options={{ title: 'Register' }} />
+           </Stack>
+           <StatusBar style="auto" />
+         </ThemeProvider>
+       </AuthProvider>
+     </ConfigProvider>
   );
 }
