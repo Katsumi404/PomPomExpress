@@ -5,6 +5,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { IconSymbol } from '@/components/ui/IconSymbol'; 
 
 // Define the user interface
 interface User {
@@ -58,11 +59,12 @@ export default function ProfileScreen(): JSX.Element {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
-        {user.profilePicture ? (
-          <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
-        ) : (
-          <View style={[styles.profileImage, styles.placeholderImage]} />
-        )}
+        <IconSymbol
+          size={50}
+          color={themeColors.tint}
+          name="user-circle" // Placeholder icon name, change as needed
+          style={styles.profileIcon}
+        />
         <View style={styles.userInfo}>
           <ThemedText type="title" style={styles.userName}>
             {user.firstName} {user.lastName}
@@ -103,15 +105,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    paddingTop: 20, // Adjusted to add spacing for top bar
   },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  profileIcon: {
     marginRight: 16,
-  },
-  placeholderImage: {
-    backgroundColor: '#ccc',
   },
   userInfo: {
     flexDirection: 'column',

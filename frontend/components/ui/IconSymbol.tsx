@@ -15,6 +15,7 @@ const MAPPING = {
   'group.fill': 'group',
   'sparkles': 'auto-fix-high',
   'plus.slash.minus': 'calculate',
+  'settings': 'settings'
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],

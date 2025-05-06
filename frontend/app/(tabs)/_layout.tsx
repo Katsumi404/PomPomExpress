@@ -79,10 +79,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="optimiserScreen"
+          name="optimizerScreen"
           options={{
             title: 'Optimizer',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="settings" color={color} />,
           }}
         />
       </Tabs>
