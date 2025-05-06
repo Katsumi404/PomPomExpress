@@ -207,7 +207,7 @@ export default function optimizerScreen(): JSX.Element {
       <ThemedView style={styles.card}>
         <ThemedView style={styles.cardHeader}>
           <ThemedText type="title" style={styles.relicName}>
-            {relic.name}
+            {relic.name} {/* This is the set name from your backend */}
           </ThemedText>
           <TouchableOpacity
             onPress={() => toggleFavorite(relic._id, relic.isFavorite)}
@@ -220,7 +220,7 @@ export default function optimizerScreen(): JSX.Element {
             />
           </TouchableOpacity>
         </ThemedView>
-
+  
         <ThemedView style={styles.basicInfo}>
           <ThemedView style={styles.infoRow}>
             <ThemedText style={styles.rarity}>
@@ -230,7 +230,7 @@ export default function optimizerScreen(): JSX.Element {
               Level: {relic.level}
             </ThemedText>
           </ThemedView>
-
+  
           <ThemedText style={styles.dateAdded}>
             Added: {new Date(relic.dateAdded).toLocaleDateString()}
           </ThemedText>
