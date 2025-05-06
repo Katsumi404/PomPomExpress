@@ -10,10 +10,11 @@ const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    // Extract fields from the request body
+    const { firstName, lastName, email, password, birthday } = req.body;
 
-    // Validate input
-    if (!name || !email || !password) {
+    // Validate input: Ensure all necessary fields are provided
+    if (!firstName || !lastName || !email || !password || !birthday) {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
@@ -23,14 +24,16 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create new user
+    // Create a new user with all provided fields
     const user = new User({
-      name,
+      firstName,
+      lastName,
       email,
-      password
+      password,
+      birthday
     });
 
-    // Save user to database
+    // Save user to the database
     await user.save();
 
     // Generate JWT token
@@ -46,8 +49,10 @@ router.post('/register', async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
-        email: user.email
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        birthday: user.birthday
       }
     });
   } catch (error) {

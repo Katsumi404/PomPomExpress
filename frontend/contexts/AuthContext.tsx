@@ -5,8 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Define User interface
 interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  birthday: string;
 }
 
 // Define AuthContext Type
@@ -15,7 +17,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   error: string | null;
-  register: (name: string, email: string, password: string) => Promise<User>;
+  register: (firstName: string, lastName: string, email: string, password: string, birthday: string) => Promise<User>;
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   getProfile: () => Promise<User>;
@@ -69,33 +71,71 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Register function
-  const register = async (name: string, email: string, password: string): Promise<User> => {
+  const register = async (
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+    birthday: string
+  ): Promise<User> => {
     try {
       setError(null);
       setLoading(true);
-      
-      const response = await axios.post<{ token: string; user: User }>('http://10.202.134.121:3000/auth/register', {
-        name,
-        email,
-        password
-      });
-      
-      const { token, user } = response.data;
-      
-      // Save to state
-      setToken(token);
-      setUser(user);
-      
-      // Save to storage
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      
-      // Set token in axios headers
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      return user;
+  
+      // Clean inputs
+      const sanitizedData = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        password, 
+        birthday: birthday.trim()
+      };
+  
+      // Send sanitized data in the request
+      const response = await axios.post(
+        'http://10.202.134.121:3000/auth/register',
+        sanitizedData, 
+        {
+          headers: {
+            'Content-Type': 'application/json', 
+          },
+        }
+      );
+  
+      console.log('Registration response status:', response.status);
+      console.log('Registration response data:', JSON.stringify(response.data));
+  
+      // Check if response contains the expected data
+      if (response.data && response.data.success && response.data.token && response.data.user) {
+        const { token, user } = response.data;
+  
+        setToken(token);
+        setUser(user);
+  
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+  
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  
+        return user;
+      } else {
+        throw new Error('Invalid response format from server');
+      }
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Registration failed');
+      console.error('Registration error details:', error);
+  
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        setError(error.response.data?.message || 'Registration failed');
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+        setError('No response from server');
+      } else {
+        console.error('Error message:', error.message);
+        setError(error.message || 'Registration failed');
+      }
+  
       throw error;
     } finally {
       setLoading(false);
@@ -108,27 +148,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      const response = await axios.post<{ token: string; user: User }>('http://10.202.134.121:3000/auth/login', {
-        email,
+      const response = await axios.post<{ token: string; user: User; success: boolean }>('http://10.202.134.121:3000/auth/login', {
+        email: email.toLowerCase(), // Normalize email
         password
       });
       
-      const { token, user } = response.data;
-      
-      // Save to state
-      setToken(token);
-      setUser(user);
-      
-      // Save to storage
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      
-      // Set token in axios headers
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      return user;
+      if (response.data && response.data.success && response.data.token && response.data.user) {
+        const { token, user } = response.data;
+        
+        // Save to state
+        setToken(token);
+        setUser(user);
+        
+        // Save to storage
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        
+        // Set token in axios headers
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        return user;
+      } else {
+        throw new Error('Invalid response format from server');
+      }
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Login failed');
+      if (error.response) {
+        setError(error.response.data?.message || 'Login failed');
+      } else if (error.request) {
+        setError('No response from server');
+      } else {
+        setError(error.message || 'Login failed');
+      }
       throw error;
     } finally {
       setLoading(false);

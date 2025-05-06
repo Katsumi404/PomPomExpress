@@ -21,7 +21,7 @@ export default function LoginScreen(): JSX.Element {
     try {
       await login(email, password);
       // Redirect to home page on successful login
-      router.replace('/');
+      router.replace('../(tabs)/profileScreen');
     } catch (error: any) {
       Alert.alert('Login Failed', error.response?.data?.message || 'Please check your credentials and try again');
     }

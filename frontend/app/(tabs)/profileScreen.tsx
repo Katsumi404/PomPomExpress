@@ -8,9 +8,11 @@ import { ThemedView } from '@/components/ThemedView';
 
 // Define the user interface
 interface User {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  profilePicture: string;
+  birthday: string;
+  profilePicture?: string;
 }
 
 // Define the auth context interface
@@ -36,7 +38,7 @@ export default function ProfileScreen(): JSX.Element {
 
   if (loading) {
     return (
-      <ThemedView style={styles.container}> 
+      <ThemedView style={styles.container}>
         <ActivityIndicator size="large" color={themeColors.tint} />
       </ThemedView>
     );
@@ -44,7 +46,7 @@ export default function ProfileScreen(): JSX.Element {
 
   if (!user) {
     return (
-      <ThemedView style={styles.container}> 
+      <ThemedView style={styles.container}>
         <ThemedText style={[styles.errorMessage, { color: Colors.danger }]}>
           User not found. Please log in again.
         </ThemedText>
@@ -53,28 +55,32 @@ export default function ProfileScreen(): JSX.Element {
   }
 
   return (
-    <ThemedView style={styles.container}> 
+    <ThemedView style={styles.container}>
       <View style={styles.header}>
-        <Image 
-          source={{ uri: user.profilePicture }} 
-          style={styles.profileImage} 
-        />
+        {user.profilePicture ? (
+          <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
+        ) : (
+          <View style={[styles.profileImage, styles.placeholderImage]} />
+        )}
         <View style={styles.userInfo}>
           <ThemedText type="title" style={styles.userName}>
-            {user.name}
+            {user.firstName} {user.lastName}
           </ThemedText>
           <ThemedText type="defaultSemiBold" style={styles.userEmail}>
             {user.email}
           </ThemedText>
+          <ThemedText type="default" style={styles.userBirthday}>
+            🎂 Birthday: {user.birthday}
+          </ThemedText>
         </View>
       </View>
-      
+
       <Button 
         title="Edit Profile"
         onPress={() => console.log('Navigate to Edit Profile Screen')}
         color={Colors.primary}
       />
-      
+
       <View style={styles.logoutContainer}>
         <Button 
           title="Logout"
@@ -102,6 +108,9 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginRight: 16,
   },
+  placeholderImage: {
+    backgroundColor: '#ccc',
+  },
   userInfo: {
     flexDirection: 'column',
   },
@@ -110,6 +119,10 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 14,
+  },
+  userBirthday: {
+    fontSize: 14,
+    marginTop: 4,
   },
   logoutContainer: {
     marginTop: 20,

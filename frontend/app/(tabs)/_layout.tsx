@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ActivityIndicator, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { ProtectedRoute } from '@/components/ProtectedRoute'; // Import your ProtectedRoute component
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -36,6 +36,7 @@ export default function TabLayout() {
   return (
     <ProtectedRoute> {/* Ensure the ProtectedRoute wraps the entire Tab Navigation */}
       <Tabs
+        initialRouteName="profileScreen"  // Set Profile as the default tab
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
           headerShown: false,
@@ -43,7 +44,6 @@ export default function TabLayout() {
           tabBarBackground: TabBarBackground,
           tabBarStyle: Platform.select({
             ios: {
-              // Use a transparent background on iOS to show the blur effect
               position: 'absolute',
             },
             default: {},
@@ -51,31 +51,38 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="homeScreen"
+          name="profileScreen"
           options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+            title: 'Profile',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle.fill" color={color} />,
           }}
         />
         <Tabs.Screen
           name="characterScreen"
           options={{
             title: 'Characters',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="group.fill" color={color} />,
           }}
         />
         <Tabs.Screen
           name="lightConeScreen"
           options={{
             title: 'LightCones',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="sparkles" color={color} />,
           }}
         />
         <Tabs.Screen
-          name="profileScreen"
+          name="calculatorScreen"
           options={{
-            title: 'Profile',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle.fill" color={color} />,
+            title: 'Calculator',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="plus.slash.minus" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="optimiserScreen"
+          options={{
+            title: 'Optimizer',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
           }}
         />
       </Tabs>

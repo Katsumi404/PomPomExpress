@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// Define the User Schema
 const UserSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -13,8 +14,16 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  name: {
+  firstName: {
     type: String,
+    required: true
+  },
+  lastName: {
+    type: String,
+    required: true
+  },
+  birthday: {
+    type: Date,
     required: true
   },
   createdAt: {
@@ -25,13 +34,11 @@ const UserSchema = new mongoose.Schema({
 
 // Password hashing middleware
 UserSchema.pre('save', async function(next) {
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) return next();  // Only hash if the password is new or changed
 
   try {
-    // Generate a salt
+    // Generate a salt and hash the password
     const salt = await bcrypt.genSalt(10);
-    // Hash the password along with the salt
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -44,7 +51,7 @@ UserSchema.methods.matchPassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Connect to UserDataDB explicitly and create the User model in that database
+// Explicitly connect to the UserDataDB
 const userDB = mongoose.connection.useDb('UserDataDB');
 const User = userDB.model('User', UserSchema);
 
