@@ -240,7 +240,6 @@ router.get('/getUserLightCones/:userId', async (req, res) => {
   }
 });
 
-// Get user's relic collection with relic details
 router.get('/getUserRelics/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -251,13 +250,18 @@ router.get('/getUserRelics/:userId', async (req, res) => {
 
     const { relicsCollection } = await getUserCollections(userId);
 
+    // Debug: Check if collection exists
+    if (!relicsCollection) {
+      return res.status(500).json({ error: "Failed to get relics collection" });
+    }
+
     const pipeline = [
       {
         $match: { userId: new ObjectId(userId) },
       },
       {
         $lookup: {
-          from: 'HonkaiStarRailDB.relics',
+          from: 'relics', // Make sure this matches your actual collection name
           localField: 'relicId',
           foreignField: '_id',
           as: 'relicDetails',
@@ -266,29 +270,37 @@ router.get('/getUserRelics/:userId', async (req, res) => {
       {
         $unwind: {
           path: '$relicDetails',
-          preserveNullAndEmptyArrays: true,  // ADD THIS LINE
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
         $project: {
-          _id: 0,
-          relicId: '$relicId',
-          name: '$relicDetails.name',
-          rarity: '$relicDetails.rarity',
-          mainStats: '$mainStats',
-          subStats: '$subStats',
-          level: '$level',
-          isFavorite: '$isFavorite',
-          dateAdded: '$dateAdded',
+          _id: 1,
+          relicId: 1,
+          name: { $ifNull: ['$relicDetails.name', 'Unknown Relic'] },
+          rarity: { $ifNull: ['$relicDetails.rarity', 0] },
+          mainStats: 1,
+          subStats: 1,
+          level: 1,
+          isFavorite: 1,
+          dateAdded: 1,
         },
       },
     ];
 
     const userRelics = await relicsCollection.aggregate(pipeline).toArray();
+    
+    // Debug: Log the first result
+    if (userRelics.length > 0) {
+      console.log("First relic in response:", userRelics[0]);
+    } else {
+      console.log("No relics found for user", userId);
+    }
 
     res.json(userRelics);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch user's relics with details" });
+    console.error("Error fetching user relics:", error);
+    res.status(500).json({ error: "Failed to fetch user's relics with details", details: error.message });
   }
 });
 

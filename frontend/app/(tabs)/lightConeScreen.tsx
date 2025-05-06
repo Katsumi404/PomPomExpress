@@ -26,7 +26,6 @@ interface LightCone {
   tags?: string[];
   releaseDate?: string;
   imageUrl?: string;
-  schemaVersion?: string;
   updatedAt?: string | null;
 }
 
@@ -262,13 +261,6 @@ export default function LightConesScreen(): JSX.Element {
                   <ThemedView style={styles.detailRow}>
                     <ThemedText type="defaultSemiBold">Release Date:</ThemedText>
                     <ThemedText>{new Date(lightCone.releaseDate).toLocaleDateString()}</ThemedText>
-                  </ThemedView>
-                ) : null}
-
-                {lightCone.schemaVersion ? (
-                  <ThemedView style={styles.detailRow}>
-                    <ThemedText type="defaultSemiBold">Schema Version:</ThemedText>
-                    <ThemedText>{lightCone.schemaVersion}</ThemedText>
                   </ThemedView>
                 ) : null}
               </ThemedView>

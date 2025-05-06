@@ -26,6 +26,10 @@ interface UserRelic {
   level: number;
   isFavorite: boolean;
   dateAdded: string;
+  // Add additional fields from the full relic
+  setName?: string;
+  description?: string;
+  imageUrl?: string;
 }
 
 interface RelicDetails {
@@ -36,7 +40,7 @@ interface RelicDetails {
   description?: string;
   mainStats?: Stats;
   subStats?: Stats;
-  tags?: string[];
+  tags?: Array<{id: string, name: string}>;
   releaseDate?: string;
   imageUrl?: string;
   schemaVersion?: string;
@@ -64,7 +68,7 @@ interface PaginationControlsProps {
   onPageChange: (page: number) => void;
 }
 
-export default function optimizerScreen(): JSX.Element {
+export default function OptimizerScreen(): JSX.Element {
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,13 +96,41 @@ export default function optimizerScreen(): JSX.Element {
 
     try {
       setIsLoading(true);
-      // Update the URL to match your API endpoint
+      // Fetch user's relics collection
       const response = await axios.get<UserRelic[]>(`${apiUrl}/users/getUserRelics/${user.id}`, {
         timeout: 5000,
       });
-      setUserRelics(response.data);
+      
+      // For each user relic, fetch the complete relic details and merge them
+      const relicsWithDetails = await Promise.all(
+        response.data.map(async (userRelic) => {
+          try {
+            const detailsResponse = await axios.get<RelicDetails>(
+              `${apiUrl}/db/getRelics/${userRelic.relicId}`,
+              { timeout: 3000 }
+            );
+            
+            // Merge user relic data with full relic details
+            return {
+              ...userRelic,
+              name: detailsResponse.data.name || "Unknown Relic",
+              setName: detailsResponse.data.setName,
+              description: detailsResponse.data.description,
+              imageUrl: detailsResponse.data.imageUrl,
+              // Ensure we keep user-specific properties
+              rarity: detailsResponse.data.rarity || userRelic.rarity,
+            };
+          } catch (error) {
+            console.warn(`Failed to fetch details for relic ${userRelic.relicId}:`, error);
+            // Return original userRelic if we can't get details
+            return userRelic;
+          }
+        })
+      );
+      
+      setUserRelics(relicsWithDetails);
       // Calculate total pages
-      setTotalPages(Math.ceil(response.data.length / itemsPerPage));
+      setTotalPages(Math.ceil(relicsWithDetails.length / itemsPerPage));
       setCurrentPage(1); // Reset to first page when data is loaded
       setIsLoading(false);
     } catch (error) {
@@ -114,7 +146,7 @@ export default function optimizerScreen(): JSX.Element {
 
   const fetchRelicDetails = async (relicId: string, userRelic: UserRelic): Promise<void> => {
     try {
-      // Update the URL to match your API endpoint for fetching a single relic
+      // We already have basic info in userRelic, but fetch complete details for the modal
       const response = await axios.get<RelicDetails>(`${apiUrl}/db/getRelics/${relicId}`, {
         timeout: 5000,
       });
@@ -202,42 +234,58 @@ export default function optimizerScreen(): JSX.Element {
     return userRelics.slice(startIndex, endIndex);
   };
 
-  const RelicCard = ({ relic, onPress }: RelicCardProps): JSX.Element => (
-    <TouchableOpacity onPress={onPress}>
-      <ThemedView style={styles.card}>
-        <ThemedView style={styles.cardHeader}>
-          <ThemedText type="title" style={styles.relicName}>
-            {relic.name} {/* This is the set name from your backend */}
-          </ThemedText>
-          <TouchableOpacity
-            onPress={() => toggleFavorite(relic._id, relic.isFavorite)}
-            style={styles.favoriteButton}
-          >
-            <IconSymbol
-              name={relic.isFavorite ? "star-filled" : "star"}
-              size={20}
-              color={relic.isFavorite ? "#FFD700" : "#808080"}
-            />
-          </TouchableOpacity>
-        </ThemedView>
-  
-        <ThemedView style={styles.basicInfo}>
-          <ThemedView style={styles.infoRow}>
-            <ThemedText style={styles.rarity}>
-              {"★".repeat(relic.rarity)}
+  const RelicCard = ({ relic, onPress }: RelicCardProps): JSX.Element => {
+    return (
+      <TouchableOpacity onPress={onPress}>
+        <ThemedView style={styles.card}>
+          <ThemedView style={styles.cardHeader}>
+            <ThemedText type="title" style={styles.relicName}>
+              {relic.name || `Relic ID: ${relic.relicId?.substring(0, 8) || "Unknown"}`}
             </ThemedText>
-            <ThemedText style={styles.level}>
-              Level: {relic.level}
-            </ThemedText>
+            <TouchableOpacity
+              onPress={() => toggleFavorite(relic._id, relic.isFavorite)}
+              style={styles.favoriteButton}
+            >
+              <IconSymbol
+                name={relic.isFavorite ? "star-filled" : "star"}
+                size={20}
+                color={relic.isFavorite ? "#FFD700" : "#808080"}
+              />
+            </TouchableOpacity>
           </ThemedView>
   
-          <ThemedText style={styles.dateAdded}>
-            Added: {new Date(relic.dateAdded).toLocaleDateString()}
-          </ThemedText>
+          <ThemedView style={styles.basicInfo}>
+            <ThemedView style={styles.infoRow}>
+              <ThemedText style={styles.rarity}>
+                {relic.rarity ? "★".repeat(relic.rarity) : "⭒"}
+              </ThemedText>
+              <ThemedText style={styles.level}>
+                Level: {relic.level || 0}
+              </ThemedText>
+            </ThemedView>
+  
+            {relic.setName && (
+              <ThemedText style={styles.setName}>
+                Set: {relic.setName}
+              </ThemedText>
+            )}
+  
+            {relic.mainStats && Object.keys(relic.mainStats).length > 0 && (
+              <ThemedText style={styles.statsPreview}>
+                Main: {Object.entries(relic.mainStats)
+                  .map(([key, value]) => `${key}: ${value}`)
+                  .join(', ')}
+              </ThemedText>
+            )}
+  
+            <ThemedText style={styles.dateAdded}>
+              Added: {relic.dateAdded ? new Date(relic.dateAdded).toLocaleDateString() : "Unknown date"}
+            </ThemedText>
+          </ThemedView>
         </ThemedView>
-      </ThemedView>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const PaginationControls = ({ currentPage, totalPages, onPageChange }: PaginationControlsProps): JSX.Element => (
     <ThemedView style={styles.paginationContainer}>
@@ -275,6 +323,11 @@ export default function optimizerScreen(): JSX.Element {
   }: RelicDetailsModalProps): JSX.Element | null => {
     if (!relic || !userRelic) return null;
 
+    const displayRelic = {
+      ...relic,
+      ...userRelic // User-specific properties override the base relic properties
+    };
+
     return (
       <Modal
         animationType="slide"
@@ -286,13 +339,13 @@ export default function optimizerScreen(): JSX.Element {
           <ThemedView style={styles.modalContent}>
             <ScrollView>
               <ThemedText type="title" style={styles.modalTitle}>
-                {relic.name}
+                {displayRelic.name}
               </ThemedText>
 
-              {relic.imageUrl ? (
+              {displayRelic.imageUrl ? (
                 <View style={styles.imageContainer}>
                   <Image
-                    source={{ uri: relic.imageUrl }}
+                    source={{ uri: displayRelic.imageUrl }}
                     style={styles.relicImage}
                     resizeMode="contain"
                   />
@@ -300,16 +353,16 @@ export default function optimizerScreen(): JSX.Element {
               ) : null}
 
               <ThemedView style={styles.detailsContainer}>
-                {relic.setName && (
+                {displayRelic.setName && (
                   <ThemedView style={styles.detailRow}>
                     <ThemedText type="defaultSemiBold">Set:</ThemedText>
-                    <ThemedText>{relic.setName}</ThemedText>
+                    <ThemedText>{displayRelic.setName}</ThemedText>
                   </ThemedView>
                 )}
 
                 <ThemedView style={styles.detailRow}>
                   <ThemedText type="defaultSemiBold">Rarity:</ThemedText>
-                  <ThemedText>{"★".repeat(relic.rarity)}</ThemedText>
+                  <ThemedText>{"★".repeat(displayRelic.rarity)}</ThemedText>
                 </ThemedView>
 
                 <ThemedView style={styles.detailRow}>
@@ -340,10 +393,10 @@ export default function optimizerScreen(): JSX.Element {
                   </TouchableOpacity>
                 </ThemedView>
 
-                {relic.description ? (
+                {displayRelic.description ? (
                   <ThemedView style={styles.descriptionContainer}>
                     <ThemedText type="defaultSemiBold">Description:</ThemedText>
-                    <ThemedText style={styles.description}>{relic.description}</ThemedText>
+                    <ThemedText style={styles.description}>{displayRelic.description}</ThemedText>
                   </ThemedView>
                 ) : null}
 
@@ -536,9 +589,19 @@ const styles = StyleSheet.create({
   level: {
     fontSize: 14,
   },
+  setName: {
+    fontSize: 14,
+    color: '#4a90e2',
+    marginTop: 2,
+  },
+  statsPreview: {
+    fontSize: 14,
+    marginTop: 2,
+  },
   dateAdded: {
     fontSize: 12,
     color: '#808080',
+    marginTop: 2,
   },
   centerContent: {
     flex: 1,

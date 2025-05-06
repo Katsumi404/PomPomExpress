@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
+import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 
 import { Collapsible } from '@/components/Collapsible';
@@ -16,7 +16,7 @@ interface Stats {
   [key: string]: number;
 }
 
-interface Relic {
+interface RelicDetails {
   _id: string;
   name: string;
   setName?: string;
@@ -24,7 +24,7 @@ interface Relic {
   description?: string;
   mainStats?: Stats;
   subStats?: Stats;
-  tags?: string[];
+  tags?: Array<{id: string, name: string}>;
   releaseDate?: string;
   imageUrl?: string;
   schemaVersion?: string;
@@ -34,12 +34,15 @@ interface Relic {
 // Props interfaces
 interface RelicCardProps {
   relic: Relic;
+  onPress: (id: string) => void;
 }
 
 interface RelicDetailsModalProps {
   relic: Relic | null;
   visible: boolean;
   onClose: () => void;
+  onAddToCollection: () => void;
+  isAdding: boolean;
 }
 
 interface PaginationControlsProps {
@@ -108,26 +111,28 @@ export default function RelicsScreen(): JSX.Element {
       return;
     }
     
+    if (!selectedRelic) return;
+    
     try {
       setAddingToCollection(true);
       
       const response = await axios.post(`${apiUrl}/users/addRelicToCollection`, {
         userId: user.id,
-        relicId: selectedRelic?._id,
-        mainStats: selectedRelic?.mainStats || {},
-        subStats: selectedRelic?.subStats || {}
+        relicId: selectedRelic._id,
+        mainStats: selectedRelic.mainStats || {},
+        subStats: selectedRelic.subStats || {}
       }, {
         timeout: 5000
       });
       
-      Alert.alert('Success', `${selectedRelic?.name} has been added to your collection!`);
+      Alert.alert('Success', `${selectedRelic.name} has been added to your collection!`);
       setAddingToCollection(false);
     } catch (error) {
       console.error('Add to collection error:', error);
       
       // Check for specific error responses
       if (error.response && error.response.status === 409) {
-        Alert.alert('Already in Collection', `${selectedRelic?.name} is already in your collection.`);
+        Alert.alert('Already in Collection', `${selectedRelic.name} is already in your collection.`);
       } else {
         Alert.alert('Error', 'Failed to add relic to your collection. Please try again later.');
       }
@@ -148,20 +153,16 @@ export default function RelicsScreen(): JSX.Element {
     return relics.slice(startIndex, endIndex);
   };
 
-  const RelicCard = ({ relic }: RelicCardProps): JSX.Element => (
-    <TouchableOpacity onPress={() => fetchRelicDetails(relic._id)}>
+  const RelicCard = ({ relic, onPress }: RelicCardProps): JSX.Element => (
+    <TouchableOpacity onPress={() => onPress(relic._id)}>
       <ThemedView style={styles.card}>
         <ThemedText type="title" style={styles.relicName}>
-          {relic.name}
+          {relic.name || "Unknown Relic"}
         </ThemedText>
-        <ThemedView style={styles.basicInfo}>
-          {relic.setName && (
-            <ThemedText style={styles.setName}>
-              Set: {relic.setName}
-            </ThemedText>
-          )}
+        
+        <ThemedView style={styles.rarityContainer}>
           <ThemedText style={styles.rarity}>
-            {"★".repeat(relic.rarity)}
+            {"★".repeat(relic.rarity || 0)}
           </ThemedText>
         </ThemedView>
       </ThemedView>
@@ -194,7 +195,13 @@ export default function RelicsScreen(): JSX.Element {
     </ThemedView>
   );
 
-  const RelicDetailsModal = ({ relic, visible, onClose }: RelicDetailsModalProps): JSX.Element | null => {
+  const RelicDetailsModal = ({ 
+    relic, 
+    visible, 
+    onClose,
+    onAddToCollection,
+    isAdding 
+  }: RelicDetailsModalProps): JSX.Element | null => {
     if (!relic) return null;
     
     return (
@@ -265,9 +272,9 @@ export default function RelicsScreen(): JSX.Element {
                   <ThemedView style={styles.tagsContainer}>
                     <ThemedText type="defaultSemiBold">Tags:</ThemedText>
                     <ThemedView style={styles.tags}>
-                      {relic.tags.map((tag, index) => (
-                        <ThemedView key={index} style={styles.tag}>
-                          <ThemedText style={styles.tagText}>{tag}</ThemedText>
+                      {relic.tags.map((tag) => (
+                        <ThemedView key={tag.id} style={styles.tag}>
+                          <ThemedText style={styles.tagText}>{tag.name}</ThemedText>
                         </ThemedView>
                       ))}
                     </ThemedView>
@@ -292,11 +299,11 @@ export default function RelicsScreen(): JSX.Element {
               {/* Add to Collection Button */}
               <TouchableOpacity 
                 style={styles.addToCollectionButton}
-                onPress={addToUserCollection}
-                disabled={addingToCollection}
+                onPress={onAddToCollection}
+                disabled={isAdding}
               >
                 <ThemedText style={styles.buttonText}>
-                  {addingToCollection ? 'Adding...' : 'Add to My Collection'}
+                  {isAdding ? 'Adding...' : 'Add to My Collection'}
                 </ThemedText>
               </TouchableOpacity>
             </ScrollView>
@@ -324,7 +331,8 @@ export default function RelicsScreen(): JSX.Element {
     >
       {isLoading ? (
         <ThemedView style={styles.centerContent}>
-          <ThemedText>Loading relics...</ThemedText>
+          <ActivityIndicator size="large" color="#007BFF" />
+          <ThemedText style={styles.loadingText}>Loading relics...</ThemedText>
         </ThemedView>
       ) : error ? (
         <ThemedView style={styles.centerContent}>
@@ -337,15 +345,21 @@ export default function RelicsScreen(): JSX.Element {
           </ThemedView>
           
           {getCurrentPageItems().map((relic) => (
-            <RelicCard key={relic._id} relic={relic} />
+            <RelicCard 
+              key={relic._id} 
+              relic={relic} 
+              onPress={fetchRelicDetails}
+            />
           ))}
           
           {/* Pagination controls */}
-          <PaginationControls 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+          {relics.length > itemsPerPage && (
+            <PaginationControls 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
         </ThemedView>
       )}
       
@@ -353,6 +367,8 @@ export default function RelicsScreen(): JSX.Element {
         relic={selectedRelic}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        onAddToCollection={addToUserCollection}
+        isAdding={addingToCollection}
       />
     </ParallaxScrollView>
   );
@@ -390,19 +406,16 @@ const styles = StyleSheet.create({
     }),
   },
   relicName: {
-    fontSize: 18,
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
   },
-  basicInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  setName: {
-    fontSize: 14,
+  rarityContainer: {
+    alignItems: 'flex-start',
   },
   rarity: {
-    color: '#FFD700',
+    fontSize: 18,
+    color: '#FFD700', // Gold color for stars
   },
   centerContent: {
     flex: 1,
@@ -410,6 +423,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     height: 300,
+  },
+  loadingText: {
+    marginTop: 12,
   },
   errorText: {
     color: 'red',
