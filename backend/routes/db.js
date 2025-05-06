@@ -196,7 +196,7 @@ router.post('/addRelics', async (req, res) => {
 router.get('/getRelics', async (req, res) => {
   try {
     const relicsCollection = getRelicsCollection();
-    const relics = await relicsCollection.find({}).limit(10).toArray();
+    const relics = await relicsCollection.find({}).toArray();
     res.json(relics);
     console.log(`✅ Fetched Relics`);
   } catch (error) {

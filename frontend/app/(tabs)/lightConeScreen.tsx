@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import axios from 'axios';
 
 import { Collapsible } from '@/components/Collapsible';
@@ -8,6 +8,7 @@ import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Define interfaces for our data structures
 interface Stats {
@@ -51,11 +52,15 @@ export default function LightConesScreen(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [selectedLightCone, setSelectedLightCone] = useState<LightCone | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [addingToCollection, setAddingToCollection] = useState<boolean>(false);
+  
+  // Auth context to get current user
+  const { user } = useAuth();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const itemsPerPage = 10; // Number of items to display per page
+  const itemsPerPage = 5; // Changed to match CharacterScreen
 
   const fetchLightCones = async (): Promise<void> => {
     try {
@@ -67,6 +72,7 @@ export default function LightConesScreen(): JSX.Element {
       setLightCones(response.data);
       // Calculate total pages
       setTotalPages(Math.ceil(response.data.length / itemsPerPage));
+      setCurrentPage(1); // Reset to first page when data is loaded
       setIsLoading(false);
     } catch (error) {
       console.error('Fetch error:', error);
@@ -90,6 +96,40 @@ export default function LightConesScreen(): JSX.Element {
     } catch (error) {
       console.error('Fetch light cone details error:', error);
       setError('Failed to fetch light cone details. Please try again later.');
+    }
+  };
+
+  // Add to user's collection
+  const addToUserCollection = async (): Promise<void> => {
+    if (!user || !user.id) {
+      Alert.alert('Authentication Required', 'Please log in to add light cones to your collection.');
+      return;
+    }
+    
+    try {
+      setAddingToCollection(true);
+      
+      const response = await axios.post('http://10.202.134.121:3000/users/addLightConeToCollection', {
+        userId: user.id,
+        lightConeId: selectedLightCone?._id,
+        stats: selectedLightCone?.stats || {}
+      }, {
+        timeout: 5000
+      });
+      
+      Alert.alert('Success', `${selectedLightCone?.name} has been added to your collection!`);
+      setAddingToCollection(false);
+    } catch (error) {
+      console.error('Add to collection error:', error);
+      
+      // Check for specific error responses
+      if (error.response && error.response.status === 409) {
+        Alert.alert('Already in Collection', `${selectedLightCone?.name} is already in your collection.`);
+      } else {
+        Alert.alert('Error', 'Failed to add light cone to your collection. Please try again later.');
+      }
+      
+      setAddingToCollection(false);
     }
   };
 
@@ -128,13 +168,13 @@ export default function LightConesScreen(): JSX.Element {
       <TouchableOpacity 
         onPress={() => onPageChange(Math.max(1, currentPage - 1))} 
         disabled={currentPage === 1}
-        style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+        style={[styles.paginationButton, currentPage === 1 && styles.disabledButton]}
       >
         <ThemedText style={styles.paginationButtonText}>Previous</ThemedText>
       </TouchableOpacity>
       
       <ThemedView style={styles.paginationInfo}>
-        <ThemedText>
+        <ThemedText style={styles.paginationLabel}>
           Page {currentPage} of {totalPages}
         </ThemedText>
       </ThemedView>
@@ -142,7 +182,7 @@ export default function LightConesScreen(): JSX.Element {
       <TouchableOpacity 
         onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))} 
         disabled={currentPage === totalPages}
-        style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+        style={[styles.paginationButton, currentPage === totalPages && styles.disabledButton]}
       >
         <ThemedText style={styles.paginationButtonText}>Next</ThemedText>
       </TouchableOpacity>
@@ -231,6 +271,17 @@ export default function LightConesScreen(): JSX.Element {
                   </ThemedView>
                 ) : null}
               </ThemedView>
+
+              {/* Add to Collection Button */}
+              <TouchableOpacity 
+                style={styles.addToCollectionButton}
+                onPress={addToUserCollection}
+                disabled={addingToCollection}
+              >
+                <ThemedText style={styles.buttonText}>
+                  {addingToCollection ? 'Adding...' : 'Add to My Collection'}
+                </ThemedText>
+              </TouchableOpacity>
             </ScrollView>
             
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -346,7 +397,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
   },
-  // Pagination styles
+  // Pagination styles - updated to match character screen
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -360,7 +411,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
   },
-  paginationButtonDisabled: {
+  disabledButton: {
     backgroundColor: '#CCCCCC',
   },
   paginationButtonText: {
@@ -370,6 +421,9 @@ const styles = StyleSheet.create({
   paginationInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  paginationLabel: {
+    fontWeight: 'bold',
   },
   // Modal styles
   modalOverlay: {
@@ -445,6 +499,19 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
+  },
+  // New buttons for collection functionality
+  addToCollectionButton: {
+    marginTop: 16, 
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   closeButton: {
     marginTop: 20,

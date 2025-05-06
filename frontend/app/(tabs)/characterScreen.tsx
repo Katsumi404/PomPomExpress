@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import axios from 'axios';
 
 import { Collapsible } from '@/components/Collapsible';
@@ -8,6 +8,7 @@ import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CharactersScreen() {
   const [characters, setCharacters] = useState([]);
@@ -15,6 +16,9 @@ export default function CharactersScreen() {
   const [error, setError] = useState(null);
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [addingToCollection, setAddingToCollection] = useState(false);
+  
+  const { user } = useAuth();
 
   // PAGINATION: State
   const [currentPage, setCurrentPage] = useState(1);
@@ -50,6 +54,38 @@ export default function CharactersScreen() {
     } catch (error) {
       console.error('Fetch character details error:', error);
       setError('Failed to fetch character details. Please try again later.');
+    }
+  };
+  
+  const addToUserCollection = async () => {
+    if (!user || !user.id) {
+      Alert.alert('Authentication Required', 'Please log in to add characters to your collection.');
+      return;
+    }
+    
+    try {
+      setAddingToCollection(true);
+      
+      const response = await axios.post('http://10.202.134.121:3000/users/addCharacterToCollection', {
+        userId: user.id,
+        characterId: selectedCharacter._id
+      }, {
+        timeout: 5000
+      });
+      
+      Alert.alert('Success', `${selectedCharacter.name} has been added to your collection!`);
+      setAddingToCollection(false);
+    } catch (error) {
+      console.error('Add to collection error:', error);
+      
+      // Check for specific error responses
+      if (error.response && error.response.status === 409) {
+        Alert.alert('Already in Collection', `${selectedCharacter.name} is already in your collection.`);
+      } else {
+        Alert.alert('Error', 'Failed to add character to your collection. Please try again later.');
+      }
+      
+      setAddingToCollection(false);
     }
   };
 
@@ -168,6 +204,17 @@ export default function CharactersScreen() {
                   </ThemedView>
                 ) : null}
               </ThemedView>
+              
+              {/* Add to Collection Button */}
+              <TouchableOpacity 
+                style={styles.addToCollectionButton}
+                onPress={addToUserCollection}
+                disabled={addingToCollection}
+              >
+                <ThemedText style={styles.buttonText}>
+                  {addingToCollection ? 'Adding...' : 'Add to My Collection'}
+                </ThemedText>
+              </TouchableOpacity>
             </ScrollView>
             
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -379,6 +426,18 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
+  },
+  addToCollectionButton: {
+    marginTop: 16, 
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   closeButton: {
     marginTop: 20,

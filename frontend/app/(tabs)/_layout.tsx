@@ -72,9 +72,9 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="calculatorScreen"
+          name="relicScreen"
           options={{
-            title: 'Calculator',
+            title: 'Relics',
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="plus.slash.minus" color={color} />,
           }}
         />
