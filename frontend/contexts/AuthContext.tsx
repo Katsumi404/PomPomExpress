@@ -56,9 +56,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser) as User);
-          
-          // Set token in axios headers for all future requests
           axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          
+          // Automatically get profile when token and user data are loaded
+          await getProfile();
         }
       } catch (e) {
         console.error('Failed to load auth info from storage:', e);
@@ -66,7 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
       }
     };
-
+  
     loadStoredAuth();
   }, []);
 
@@ -206,8 +207,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Get user profile function
   const getProfile = async (): Promise<User> => {
     try {
+      console.log('Fetching profile...'); // Log before making the request
       setLoading(true);
       const response = await axios.get<User>('http://10.202.134.121:3000/auth/profile');
+      
+      console.log('Profile data:', response.data); // Log the response data
+      
       setUser(response.data);
       await AsyncStorage.setItem('user', JSON.stringify(response.data));
       return response.data;

@@ -110,10 +110,14 @@ router.post('/login', async (req, res) => {
 router.get('/profile', 
   passport.authenticate('jwt', { session: false }), 
   (req, res) => {
+    console.log('Authenticated user data:', req.user)
+
     res.json({
       id: req.user._id,
-      name: req.user.name,
-      email: req.user.email
+      firstName: req.user.firstName, 
+      lastName: req.user.lastName,
+      email: req.user.email,
+      birthday: req.user.birthday 
     });
   }
 );

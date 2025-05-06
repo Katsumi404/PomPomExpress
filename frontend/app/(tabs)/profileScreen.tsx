@@ -29,6 +29,7 @@ export default function ProfileScreen(): JSX.Element {
   const themeColors = Colors[colorScheme];
 
   useEffect(() => {
+    // Fetch user profile only if it's not already loaded
     if (!user && !loading) {
       getProfile().catch((error: Error) => {
         console.error('Failed to fetch user profile:', error);
@@ -75,6 +76,7 @@ export default function ProfileScreen(): JSX.Element {
         </View>
       </View>
 
+      {/* Edit Profile Button */}
       <Button 
         title="Edit Profile"
         onPress={() => console.log('Navigate to Edit Profile Screen')}
