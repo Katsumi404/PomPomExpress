@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useConfig } from './ConfigContext';  // Import the useConfig hook
+import { useConfig } from './ConfigContext'; 
 
 // Define User interface
 interface User {
@@ -42,7 +42,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const { apiUrl } = useConfig();  // Use the ConfigContext to get the API URL
+  const { apiUrl } = useConfig();  
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
