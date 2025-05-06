@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useConfig } from './ConfigContext';  // Import the useConfig hook
 
 // Define User interface
 interface User {
@@ -41,6 +42,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const { apiUrl } = useConfig();  // Use the ConfigContext to get the API URL
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -92,9 +94,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         birthday: birthday.trim()
       };
   
-      // Send sanitized data in the request
       const response = await axios.post(
-        'http://10.202.134.121:3000/auth/register',
+        `${apiUrl}/auth/register`,  // Use apiUrl from ConfigContext
         sanitizedData, 
         {
           headers: {
@@ -103,10 +104,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       );
   
-      console.log('Registration response status:', response.status);
-      console.log('Registration response data:', JSON.stringify(response.data));
-  
-      // Check if response contains the expected data
       if (response.data && response.data.success && response.data.token && response.data.user) {
         const { token, user } = response.data;
   
@@ -124,19 +121,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error: any) {
       console.error('Registration error details:', error);
-  
       if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
         setError(error.response.data?.message || 'Registration failed');
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-        setError('No response from server');
       } else {
-        console.error('Error message:', error.message);
         setError(error.message || 'Registration failed');
       }
-  
       throw error;
     } finally {
       setLoading(false);
@@ -149,23 +138,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      const response = await axios.post<{ token: string; user: User; success: boolean }>('http://10.202.134.121:3000/auth/login', {
-        email: email.toLowerCase(), // Normalize email
+      const response = await axios.post<{ token: string; user: User; success: boolean }>(`${apiUrl}/auth/login`, {
+        email: email.toLowerCase(), 
         password
       });
       
       if (response.data && response.data.success && response.data.token && response.data.user) {
         const { token, user } = response.data;
         
-        // Save to state
         setToken(token);
         setUser(user);
         
-        // Save to storage
         await AsyncStorage.setItem('token', token);
         await AsyncStorage.setItem('user', JSON.stringify(user));
         
-        // Set token in axios headers
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
         return user;
@@ -175,8 +161,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       if (error.response) {
         setError(error.response.data?.message || 'Login failed');
-      } else if (error.request) {
-        setError('No response from server');
       } else {
         setError(error.message || 'Login failed');
       }
@@ -189,15 +173,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = async (): Promise<void> => {
     try {
-      // Clear storage
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
       
-      // Clear state
       setToken(null);
       setUser(null);
       
-      // Clear axios headers
       delete axios.defaults.headers.common['Authorization'];
     } catch (e) {
       console.error('Logout error:', e);
@@ -207,11 +188,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Get user profile function
   const getProfile = async (): Promise<User> => {
     try {
-      console.log('Fetching profile...'); // Log before making the request
       setLoading(true);
-      const response = await axios.get<User>('http://10.202.134.121:3000/auth/profile');
-      
-      console.log('Profile data:', response.data); // Log the response data
+      const response = await axios.get<User>(`${apiUrl}/auth/profile`);
       
       setUser(response.data);
       await AsyncStorage.setItem('user', JSON.stringify(response.data));
@@ -219,7 +197,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('Get profile error:', error);
       if (error.response?.status === 401) {
-        // Token might be expired, logout user
         await logout();
       }
       throw error;
@@ -228,7 +205,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Provide auth values and functions
   const authContextValue: AuthContextType = {
     user,
     token,

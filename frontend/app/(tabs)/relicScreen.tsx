@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfig } from'@/contexts/ConfigContext'; 
 
 // Define interfaces for our data structures
 interface Stats {
@@ -55,8 +56,8 @@ export default function RelicsScreen(): JSX.Element {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [addingToCollection, setAddingToCollection] = useState<boolean>(false);
   
-  // Auth context to get current user
   const { user } = useAuth();
+  const { apiUrl } = useConfig();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -67,7 +68,7 @@ export default function RelicsScreen(): JSX.Element {
     try {
       setIsLoading(true);
       // Update the URL to match your API endpoint
-      const response = await axios.get<Relic[]>('http://10.202.134.121:3000/db/getRelics', {
+      const response = await axios.get<Relic[]>(`${apiUrl}/db/getRelics`, {
         timeout: 5000,
       });
       setRelics(response.data);
@@ -89,7 +90,7 @@ export default function RelicsScreen(): JSX.Element {
   const fetchRelicDetails = async (id: string): Promise<void> => {
     try {
       // Update the URL to match your API endpoint for fetching a single relic
-      const response = await axios.get<Relic>(`http://10.202.134.121:3000/db/getRelics/${id}`, {
+      const response = await axios.get<Relic>(`${apiUrl}/db/getRelics/${id}`, {
         timeout: 5000,
       });
       setSelectedRelic(response.data);
@@ -110,7 +111,7 @@ export default function RelicsScreen(): JSX.Element {
     try {
       setAddingToCollection(true);
       
-      const response = await axios.post('http://10.202.134.121:3000/users/addRelicToCollection', {
+      const response = await axios.post(`${apiUrl}/users/addRelicToCollection`, {
         userId: user.id,
         relicId: selectedRelic?._id,
         mainStats: selectedRelic?.mainStats || {},

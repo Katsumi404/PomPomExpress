@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfig } from'@/contexts/ConfigContext'; 
 
 export default function CharactersScreen() {
   const [characters, setCharacters] = useState([]);
@@ -19,6 +20,7 @@ export default function CharactersScreen() {
   const [addingToCollection, setAddingToCollection] = useState(false);
   
   const { user } = useAuth();
+  const { apiUrl } = useConfig();
 
   // PAGINATION: State
   const [currentPage, setCurrentPage] = useState(1);
@@ -27,7 +29,7 @@ export default function CharactersScreen() {
   const fetchCharacters = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('http://10.202.134.121:3000/db/getCharacters', {
+      const response = await axios.get(`${apiUrl}/db/getCharacters`, {
         timeout: 5000,
       });
       setCharacters(response.data);
@@ -46,7 +48,7 @@ export default function CharactersScreen() {
 
   const fetchCharacterDetails = async (id) => {
     try {
-      const response = await axios.get(`http://10.202.134.121:3000/db/getCharacters/${id}`, {
+      const response = await axios.get(`${apiUrl}/db/getCharacters/${id}`, {
         timeout: 5000,
       });
       setSelectedCharacter(response.data);
@@ -66,7 +68,7 @@ export default function CharactersScreen() {
     try {
       setAddingToCollection(true);
       
-      const response = await axios.post('http://10.202.134.121:3000/users/addCharacterToCollection', {
+      const response = await axios.post(`${apiUrl}/users/addCharacterToCollection`, {
         userId: user.id,
         characterId: selectedCharacter._id
       }, {

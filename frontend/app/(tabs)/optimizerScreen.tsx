@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfig } from'@/contexts/ConfigContext'; 
 
 // Define interfaces for our data structures
 interface Stats {
@@ -63,7 +64,7 @@ interface PaginationControlsProps {
   onPageChange: (page: number) => void;
 }
 
-export default function UserRelicsScreen(): JSX.Element {
+export default function optimizerScreen(): JSX.Element {
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,8 +74,8 @@ export default function UserRelicsScreen(): JSX.Element {
   const [updatingRelic, setUpdatingRelic] = useState<boolean>(false);
   const [removingRelic, setRemovingRelic] = useState<boolean>(false);
 
-  // Auth context to get current user
   const { user } = useAuth();
+  const { apiUrl } = useConfig();
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -92,7 +93,7 @@ export default function UserRelicsScreen(): JSX.Element {
     try {
       setIsLoading(true);
       // Update the URL to match your API endpoint
-      const response = await axios.get<UserRelic[]>(`http://10.202.134.121:3000/users/getUserRelics/${user.id}`, {
+      const response = await axios.get<UserRelic[]>(`${apiUrl}/users/getUserRelics/${user.id}`, {
         timeout: 5000,
       });
       setUserRelics(response.data);
@@ -100,7 +101,6 @@ export default function UserRelicsScreen(): JSX.Element {
       setTotalPages(Math.ceil(response.data.length / itemsPerPage));
       setCurrentPage(1); // Reset to first page when data is loaded
       setIsLoading(false);
-      console.log("Fetched relics:", response.data);
     } catch (error) {
       console.error('Fetch error:', error);
       setError('Failed to fetch your relics. Please try again later.');
@@ -115,7 +115,7 @@ export default function UserRelicsScreen(): JSX.Element {
   const fetchRelicDetails = async (relicId: string, userRelic: UserRelic): Promise<void> => {
     try {
       // Update the URL to match your API endpoint for fetching a single relic
-      const response = await axios.get<RelicDetails>(`http://10.202.134.121:3000/db/getRelics/${relicId}`, {
+      const response = await axios.get<RelicDetails>(`${apiUrl}/db/getRelics/${relicId}`, {
         timeout: 5000,
       });
       setSelectedRelicDetails(response.data);
@@ -137,7 +137,7 @@ export default function UserRelicsScreen(): JSX.Element {
     try {
       setUpdatingRelic(true);
 
-      await axios.put(`http://10.202.134.121:3000/users/updateUserRelic/${id}`, {
+      await axios.put(`${apiUrl}/users/updateUserRelic/${id}`, {
         userId: user.id,
         ...updates
       }, {
@@ -168,7 +168,7 @@ export default function UserRelicsScreen(): JSX.Element {
     try {
       setRemovingRelic(true);
 
-      await axios.delete(`http://10.202.134.121:3000/users/removeRelicFromCollection/${user.id}/${relicId}`, {
+      await axios.delete(`${apiUrl}/users/removeRelicFromCollection/${user.id}/${relicId}`, {
         timeout: 5000
       });
 

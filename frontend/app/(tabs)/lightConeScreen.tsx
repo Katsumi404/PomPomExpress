@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfig } from'@/contexts/ConfigContext'; 
 
 // Define interfaces for our data structures
 interface Stats {
@@ -54,8 +55,8 @@ export default function LightConesScreen(): JSX.Element {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [addingToCollection, setAddingToCollection] = useState<boolean>(false);
   
-  // Auth context to get current user
   const { user } = useAuth();
+  const { apiUrl } = useConfig();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -66,7 +67,7 @@ export default function LightConesScreen(): JSX.Element {
     try {
       setIsLoading(true);
       // Update the URL to match your API endpoint
-      const response = await axios.get<LightCone[]>('http://10.202.134.121:3000/db/getLightCones', {
+      const response = await axios.get<LightCone[]>(`${apiUrl}/db/getLightCones`, {
         timeout: 5000,
       });
       setLightCones(response.data);
@@ -88,7 +89,7 @@ export default function LightConesScreen(): JSX.Element {
   const fetchLightConeDetails = async (id: string): Promise<void> => {
     try {
       // Update the URL to match your API endpoint for fetching a single light cone
-      const response = await axios.get<LightCone>(`http://10.202.134.121:3000/db/getLightCones/${id}`, {
+      const response = await axios.get<LightCone>(`${apiUrl}/db/getLightCones/${id}`, {
         timeout: 5000,
       });
       setSelectedLightCone(response.data);
@@ -109,7 +110,7 @@ export default function LightConesScreen(): JSX.Element {
     try {
       setAddingToCollection(true);
       
-      const response = await axios.post('http://10.202.134.121:3000/users/addLightConeToCollection', {
+      const response = await axios.post(`${apiUrl}/users/addLightConeToCollection`, {
         userId: user.id,
         lightConeId: selectedLightCone?._id,
         stats: selectedLightCone?.stats || {}
