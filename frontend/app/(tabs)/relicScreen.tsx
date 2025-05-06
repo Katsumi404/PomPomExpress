@@ -3,6 +3,7 @@ import { StyleSheet, Platform, View, Modal, TouchableOpacity, ScrollView, Image,
 import axios from 'axios';
 
 import { Collapsible } from '@/components/Collapsible';
+import { ExternalLink } from '@/components/ExternalLink';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -10,27 +11,34 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Define interfaces for our data structures
+interface Stats {
+  [key: string]: number;
+}
+
 interface Relic {
   _id: string;
   name: string;
-  setType: string;
+  setName?: string;
   rarity: number;
   description?: string;
-  bonuses?: string[];
+  mainStats?: Stats;
+  subStats?: Stats;
+  tags?: string[];
+  releaseDate?: string;
   imageUrl?: string;
+  schemaVersion?: string;
+  updatedAt?: string | null;
 }
 
 // Props interfaces
 interface RelicCardProps {
   relic: Relic;
-  onPress: (id: string) => void;
 }
 
 interface RelicDetailsModalProps {
   relic: Relic | null;
   visible: boolean;
   onClose: () => void;
-  onAddToCollection: () => void;
 }
 
 interface PaginationControlsProps {
@@ -39,26 +47,18 @@ interface PaginationControlsProps {
   onPageChange: (page: number) => void;
 }
 
-interface AddRelicToCollectionRequest {
-  userId: string;
-  relicId: string;
-}
-
-interface AddRelicToCollectionResponse {
-  success: boolean;
-  message?: string;
-}
-
 export default function RelicsScreen(): JSX.Element {
   const [relics, setRelics] = useState<Relic[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRelic, setSelectedRelic] = useState<Relic | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-
+  const [addingToCollection, setAddingToCollection] = useState<boolean>(false);
+  
+  // Auth context to get current user
   const { user } = useAuth();
-
-  // Pagination
+  
+  // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const itemsPerPage = 5;
@@ -66,30 +66,19 @@ export default function RelicsScreen(): JSX.Element {
   const fetchRelics = async (): Promise<void> => {
     try {
       setIsLoading(true);
+      // Update the URL to match your API endpoint
       const response = await axios.get<Relic[]>('http://10.202.134.121:3000/db/getRelics', {
         timeout: 5000,
       });
       setRelics(response.data);
+      // Calculate total pages
       setTotalPages(Math.ceil(response.data.length / itemsPerPage));
-      setCurrentPage(1);
+      setCurrentPage(1); // Reset to first page when data is loaded
       setIsLoading(false);
     } catch (error) {
-      console.error('Fetch relics error:', error);
+      console.error('Fetch error:', error);
       setError('Failed to fetch relics. Please try again later.');
       setIsLoading(false);
-    }
-  };
-
-  const fetchRelicDetails = async (id: string): Promise<void> => {
-    try {
-      const response = await axios.get<Relic>(`http://10.202.134.121:3000/db/getRelics/${id}`, {
-        timeout: 5000,
-      });
-      setSelectedRelic(response.data);
-      setModalVisible(true);
-    } catch (error) {
-      console.error('Fetch relic details error:', error);
-      setError('Failed to fetch relic details.');
     }
   };
 
@@ -97,104 +86,220 @@ export default function RelicsScreen(): JSX.Element {
     fetchRelics();
   }, []);
 
-  const addToUserRelicCollection = async (): Promise<void> => {
-    if (!user || !user.id || !selectedRelic) {
-      Alert.alert('Authentication Required', 'Please log in to manage your relic collection.');
+  const fetchRelicDetails = async (id: string): Promise<void> => {
+    try {
+      // Update the URL to match your API endpoint for fetching a single relic
+      const response = await axios.get<Relic>(`http://10.202.134.121:3000/db/getRelics/${id}`, {
+        timeout: 5000,
+      });
+      setSelectedRelic(response.data);
+      setModalVisible(true);
+    } catch (error) {
+      console.error('Fetch relic details error:', error);
+      setError('Failed to fetch relic details. Please try again later.');
+    }
+  };
+
+  // Add to user's collection
+  const addToUserCollection = async (): Promise<void> => {
+    if (!user || !user.id) {
+      Alert.alert('Authentication Required', 'Please log in to add relics to your collection.');
       return;
     }
-  
+    
     try {
-      const payload: AddRelicToCollectionRequest = {
+      setAddingToCollection(true);
+      
+      const response = await axios.post('http://10.202.134.121:3000/users/addRelicToCollection', {
         userId: user.id,
-        relicId: selectedRelic._id,
-      };
-  
-      const response = await axios.post<AddRelicToCollectionResponse>(
-        'http://10.202.134.121:3000/users/addRelicToCollection',
-        payload,
-        { timeout: 5000 }
-      );
-  
-      if (response.data.success) {
-        Alert.alert('Success', `${selectedRelic.name} added to your collection!`);
-      } else {
-        Alert.alert('Error', response.data.message || 'Failed to add relic.');
-      }
+        relicId: selectedRelic?._id,
+        mainStats: selectedRelic?.mainStats || {},
+        subStats: selectedRelic?.subStats || {}
+      }, {
+        timeout: 5000
+      });
+      
+      Alert.alert('Success', `${selectedRelic?.name} has been added to your collection!`);
+      setAddingToCollection(false);
     } catch (error) {
-      console.error('Add relic error:', error);
-      Alert.alert('Error', 'An unexpected error occurred.');
+      console.error('Add to collection error:', error);
+      
+      // Check for specific error responses
+      if (error.response && error.response.status === 409) {
+        Alert.alert('Already in Collection', `${selectedRelic?.name} is already in your collection.`);
+      } else {
+        Alert.alert('Error', 'Failed to add relic to your collection. Please try again later.');
+      }
+      
+      setAddingToCollection(false);
     }
-  
-    setModalVisible(false);
   };
-  
 
+  // Handle page change
   const handlePageChange = (page: number): void => {
     setCurrentPage(page);
   };
 
+  // Get current page items
   const getCurrentPageItems = (): Relic[] => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return relics.slice(startIndex, endIndex);
   };
 
-  const RelicCard = ({ relic, onPress }: RelicCardProps): JSX.Element => (
-    <TouchableOpacity onPress={() => onPress(relic._id)}>
+  const RelicCard = ({ relic }: RelicCardProps): JSX.Element => (
+    <TouchableOpacity onPress={() => fetchRelicDetails(relic._id)}>
       <ThemedView style={styles.card}>
-        <ThemedText type="title" style={styles.cardTitle}>{relic.name}</ThemedText>
-        <ThemedView style={styles.cardInfo}>
-          <ThemedText style={styles.setType}>{relic.setType}</ThemedText>
-          <ThemedText style={styles.rarity}>{"★".repeat(relic.rarity)}</ThemedText>
+        <ThemedText type="title" style={styles.relicName}>
+          {relic.name}
+        </ThemedText>
+        <ThemedView style={styles.basicInfo}>
+          {relic.setName && (
+            <ThemedText style={styles.setName}>
+              Set: {relic.setName}
+            </ThemedText>
+          )}
+          <ThemedText style={styles.rarity}>
+            {"★".repeat(relic.rarity)}
+          </ThemedText>
         </ThemedView>
       </ThemedView>
     </TouchableOpacity>
   );
 
-  const RelicDetailsModal = ({ relic, visible, onClose, onAddToCollection }: RelicDetailsModalProps): JSX.Element | null => {
-    if (!relic) return null;
+  const PaginationControls = ({ currentPage, totalPages, onPageChange }: PaginationControlsProps): JSX.Element => (
+    <ThemedView style={styles.paginationContainer}>
+      <TouchableOpacity 
+        onPress={() => onPageChange(Math.max(1, currentPage - 1))} 
+        disabled={currentPage === 1}
+        style={[styles.paginationButton, currentPage === 1 && styles.disabledButton]}
+      >
+        <ThemedText style={styles.paginationButtonText}>Previous</ThemedText>
+      </TouchableOpacity>
+      
+      <ThemedView style={styles.paginationInfo}>
+        <ThemedText style={styles.paginationLabel}>
+          Page {currentPage} of {totalPages}
+        </ThemedText>
+      </ThemedView>
+      
+      <TouchableOpacity 
+        onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))} 
+        disabled={currentPage === totalPages}
+        style={[styles.paginationButton, currentPage === totalPages && styles.disabledButton]}
+      >
+        <ThemedText style={styles.paginationButtonText}>Next</ThemedText>
+      </TouchableOpacity>
+    </ThemedView>
+  );
 
+  const RelicDetailsModal = ({ relic, visible, onClose }: RelicDetailsModalProps): JSX.Element | null => {
+    if (!relic) return null;
+    
     return (
-      <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={visible}
+        onRequestClose={onClose}
+      >
         <ThemedView style={styles.modalOverlay}>
           <ThemedView style={styles.modalContent}>
             <ScrollView>
-              <ThemedText type="title" style={styles.modalTitle}>{relic.name}</ThemedText>
-
-              {relic.imageUrl && (
+              <ThemedText type="title" style={styles.modalTitle}>
+                {relic.name}
+              </ThemedText>
+              
+              {relic.imageUrl ? (
                 <View style={styles.imageContainer}>
-                  <Image source={{ uri: relic.imageUrl }} style={styles.characterImage} resizeMode="contain" />
+                  <Image 
+                    source={{ uri: relic.imageUrl }} 
+                    style={styles.relicImage} 
+                    resizeMode="contain"
+                  />
                 </View>
-              )}
-
-              <ThemedText>Set Type: {relic.setType}</ThemedText>
-              <ThemedText>Rarity: {"★".repeat(relic.rarity)}</ThemedText>
-
-              {relic.description && (
-                <ThemedView style={styles.descriptionContainer}>
-                  <ThemedText>Description:</ThemedText>
-                  <ThemedText style={styles.description}>{relic.description}</ThemedText>
-                </ThemedView>
-              )}
-
-              {relic.bonuses?.length > 0 && (
-                <Collapsible title="Bonuses">
-                  <ThemedView style={styles.collapsibleContent}>
-                    {relic.bonuses.map((bonus, index) => (
-                      <ThemedText key={index}>• {bonus}</ThemedText>
-                    ))}
+              ) : null}
+              
+              <ThemedView style={styles.detailsContainer}>
+                {relic.setName && (
+                  <ThemedView style={styles.detailRow}>
+                    <ThemedText type="defaultSemiBold">Set:</ThemedText>
+                    <ThemedText>{relic.setName}</ThemedText>
                   </ThemedView>
-                </Collapsible>
-              )}
+                )}
+                
+                <ThemedView style={styles.detailRow}>
+                  <ThemedText type="defaultSemiBold">Rarity:</ThemedText>
+                  <ThemedText>{"★".repeat(relic.rarity)}</ThemedText>
+                </ThemedView>
+                
+                {relic.description ? (
+                  <ThemedView style={styles.descriptionContainer}>
+                    <ThemedText type="defaultSemiBold">Description:</ThemedText>
+                    <ThemedText style={styles.description}>{relic.description}</ThemedText>
+                  </ThemedView>
+                ) : null}
+                
+                {relic.mainStats && Object.keys(relic.mainStats).length > 0 ? (
+                  <Collapsible title="Main Stats">
+                    <ThemedView style={styles.collapsibleContent}>
+                      {Object.entries(relic.mainStats).map(([stat, value]) => (
+                        <ThemedText key={stat}>• {stat}: {value}</ThemedText>
+                      ))}
+                    </ThemedView>
+                  </Collapsible>
+                ) : null}
+                
+                {relic.subStats && Object.keys(relic.subStats).length > 0 ? (
+                  <Collapsible title="Sub Stats">
+                    <ThemedView style={styles.collapsibleContent}>
+                      {Object.entries(relic.subStats).map(([stat, value]) => (
+                        <ThemedText key={stat}>• {stat}: {value}</ThemedText>
+                      ))}
+                    </ThemedView>
+                  </Collapsible>
+                ) : null}
+                
+                {relic.tags && relic.tags.length > 0 ? (
+                  <ThemedView style={styles.tagsContainer}>
+                    <ThemedText type="defaultSemiBold">Tags:</ThemedText>
+                    <ThemedView style={styles.tags}>
+                      {relic.tags.map((tag, index) => (
+                        <ThemedView key={index} style={styles.tag}>
+                          <ThemedText style={styles.tagText}>{tag}</ThemedText>
+                        </ThemedView>
+                      ))}
+                    </ThemedView>
+                  </ThemedView>
+                ) : null}
+                
+                {relic.releaseDate ? (
+                  <ThemedView style={styles.detailRow}>
+                    <ThemedText type="defaultSemiBold">Release Date:</ThemedText>
+                    <ThemedText>{new Date(relic.releaseDate).toLocaleDateString()}</ThemedText>
+                  </ThemedView>
+                ) : null}
 
-              <TouchableOpacity
+                {relic.schemaVersion ? (
+                  <ThemedView style={styles.detailRow}>
+                    <ThemedText type="defaultSemiBold">Schema Version:</ThemedText>
+                    <ThemedText>{relic.schemaVersion}</ThemedText>
+                  </ThemedView>
+                ) : null}
+              </ThemedView>
+
+              {/* Add to Collection Button */}
+              <TouchableOpacity 
                 style={styles.addToCollectionButton}
-                onPress={onAddToCollection}
+                onPress={addToUserCollection}
+                disabled={addingToCollection}
               >
-                <ThemedText style={styles.buttonText}>Add to My Collection (Later)</ThemedText>
+                <ThemedText style={styles.buttonText}>
+                  {addingToCollection ? 'Adding...' : 'Add to My Collection'}
+                </ThemedText>
               </TouchableOpacity>
             </ScrollView>
-
+            
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <ThemedText style={styles.closeButtonText}>Close</ThemedText>
             </TouchableOpacity>
@@ -204,32 +309,17 @@ export default function RelicsScreen(): JSX.Element {
     );
   };
 
-  const PaginationControls = ({ currentPage, totalPages, onPageChange }: PaginationControlsProps): JSX.Element => (
-    <ThemedView style={styles.paginationContainer}>
-      <TouchableOpacity
-        onPress={() => onPageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
-        style={[styles.paginationButton, currentPage === 1 && styles.disabledButton]}
-      >
-        <ThemedText style={styles.paginationText}>Previous</ThemedText>
-      </TouchableOpacity>
-
-      <ThemedText style={styles.paginationLabel}>Page {currentPage} of {totalPages}</ThemedText>
-
-      <TouchableOpacity
-        onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
-        style={[styles.paginationButton, currentPage === totalPages && styles.disabledButton]}
-      >
-        <ThemedText style={styles.paginationText}>Next</ThemedText>
-      </TouchableOpacity>
-    </ThemedView>
-  );
-
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#E8E8E8', dark: '#444' }}
-      headerImage={<IconSymbol size={310} name="shield" color="#808080" style={styles.headerImage} />}
+      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+      headerImage={
+        <IconSymbol
+          size={310}
+          color="#808080"
+          name="shield"
+          style={styles.headerImage}
+        />
+      }
     >
       {isLoading ? (
         <ThemedView style={styles.centerContent}>
@@ -241,25 +331,27 @@ export default function RelicsScreen(): JSX.Element {
         </ThemedView>
       ) : (
         <ThemedView style={styles.container}>
-          <ThemedText type="title" style={styles.titleContainer}>Honkai Star Rail Relics</ThemedText>
-
-          {getCurrentPageItems().map(relic => (
-            <RelicCard key={relic._id} relic={relic} onPress={fetchRelicDetails} />
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText type="title">Honkai Star Rail Relics</ThemedText>
+          </ThemedView>
+          
+          {getCurrentPageItems().map((relic) => (
+            <RelicCard key={relic._id} relic={relic} />
           ))}
-
-          <PaginationControls
+          
+          {/* Pagination controls */}
+          <PaginationControls 
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
           />
         </ThemedView>
       )}
-
-      <RelicDetailsModal
+      
+      <RelicDetailsModal 
         relic={selectedRelic}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onAddToCollection={addToUserRelicCollection}
       />
     </ParallaxScrollView>
   );
@@ -281,41 +373,35 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   card: {
-    marginBottom: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-    padding: 12,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.22,
-        shadowRadius: 2.22,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 3,
+        elevation: 4,
       },
     }),
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  relicName: {
+    fontSize: 18,
     marginBottom: 4,
   },
-  cardInfo: {
+  basicInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  setType: {
+  setName: {
     fontSize: 14,
-    color: '#555',
   },
   rarity: {
     color: '#FFD700',
-    fontSize: 14,
   },
   centerContent: {
     flex: 1,
@@ -344,9 +430,13 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#CCCCCC',
   },
-  paginationText: {
+  paginationButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  paginationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   paginationLabel: {
     fontWeight: 'bold',
@@ -363,7 +453,6 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     borderRadius: 16,
     padding: 20,
-    backgroundColor: '#fff',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -385,10 +474,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  characterImage: {
+  relicImage: {
     width: 200,
     height: 200,
     borderRadius: 8,
+  },
+  detailsContainer: {
+    gap: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   descriptionContainer: {
     marginVertical: 8,
@@ -401,9 +498,27 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
   },
-  // New buttons for collection functionality
+  tagsContainer: {
+    marginVertical: 8,
+  },
+  tags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  tag: {
+    backgroundColor: 'rgba(100, 100, 100, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  tagText: {
+    fontSize: 12,
+  },
+  // Button styles
   addToCollectionButton: {
-    marginTop: 16,
+    marginTop: 16, 
     backgroundColor: '#4CAF50',
     padding: 12,
     borderRadius: 8,

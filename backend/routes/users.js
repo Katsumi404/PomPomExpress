@@ -240,36 +240,55 @@ router.get('/getUserLightCones/:userId', async (req, res) => {
   }
 });
 
-// Get user's relic collection
+// Get user's relic collection with relic details
 router.get('/getUserRelics/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
+
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
     const { relicsCollection } = await getUserCollections(userId);
 
-    // Aggregate to join with HonkaiStarRailDB relics
     const pipeline = [
       {
-        $match: { userId: new ObjectId(userId) }
+        $match: { userId: new ObjectId(userId) },
       },
       {
         $lookup: {
-          from: 'HonkaiStarRailDB.relics',  // Assuming 'HonkaiStarRailDB.relics' exists
+          from: 'HonkaiStarRailDB.relics',
           localField: 'relicId',
           foreignField: '_id',
-          as: 'relicDetails'
-        }
+          as: 'relicDetails',
+        },
       },
       {
-        $unwind: '$relicDetails'
-      }
+        $unwind: {
+          path: '$relicDetails',
+          preserveNullAndEmptyArrays: true,  // ADD THIS LINE
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          relicId: '$relicId',
+          name: '$relicDetails.name',
+          rarity: '$relicDetails.rarity',
+          mainStats: '$mainStats',
+          subStats: '$subStats',
+          level: '$level',
+          isFavorite: '$isFavorite',
+          dateAdded: '$dateAdded',
+        },
+      },
     ];
 
     const userRelics = await relicsCollection.aggregate(pipeline).toArray();
+
     res.json(userRelics);
-    console.log(`✅ Fetched relics for user: ${userId}`);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch user's relics" });
-    console.log(`❌ Failed to fetch user's relics: ${error.message}`);
+    res.status(500).json({ error: "Failed to fetch user's relics with details" });
   }
 });
 

@@ -7,16 +7,14 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol'; 
 
-// Define the user interface
 interface User {
   firstName: string;
   lastName: string;
   email: string;
-  birthday: string; // Assuming birthday is in ISO string format or a valid date format
+  birthday: string; 
   profilePicture?: string;
 }
 
-// Define the auth context interface
 interface AuthContextType {
   user: User | null;
   loading: boolean;
