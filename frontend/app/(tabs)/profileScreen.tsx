@@ -12,7 +12,7 @@ interface User {
   firstName: string;
   lastName: string;
   email: string;
-  birthday: string;
+  birthday: string; // Assuming birthday is in ISO string format or a valid date format
   profilePicture?: string;
 }
 
@@ -37,6 +37,16 @@ export default function ProfileScreen(): JSX.Element {
       });
     }
   }, [user, loading, getProfile]);
+
+  // Function to format the birthday date
+  const formatDate = (date: string) => {
+    const formattedDate = new Date(date);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(formattedDate);
+  };
 
   if (loading) {
     return (
@@ -73,7 +83,7 @@ export default function ProfileScreen(): JSX.Element {
             {user.email}
           </ThemedText>
           <ThemedText type="default" style={styles.userBirthday}>
-            🎂 Birthday: {user.birthday}
+            🎂 Birthday: {formatDate(user.birthday)}
           </ThemedText>
         </View>
       </View>
