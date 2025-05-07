@@ -239,7 +239,7 @@ router.get('/getUserRelics/:userId', async (req, res) => {
       },
       {
         $lookup: {
-          from: 'relics', // Make sure this matches your actual collection name
+          from: 'relics', 
           localField: 'relicId',
           foreignField: '_id',
           as: 'relicDetails',
