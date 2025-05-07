@@ -9,8 +9,8 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfig } from'@/contexts/ConfigContext';
-import { RelicCard, PaginationControls, setOnPressFavorite } from '@/components/optimizerComponents/RelicComponents'; // Named imports from RelicComponents
-import RelicDetailsModal from '@/components/optimizerComponents/RelicDetailsModal';
+import { RelicCard, PaginationControls, setOnPressFavorite } from '@/components/relics/RelicComponents'; // Named imports from RelicComponents
+import RelicDetailsModal from '@/components/relics/RelicDetailsModal';
 
 // Define interfaces for our data structures
 interface Stats {

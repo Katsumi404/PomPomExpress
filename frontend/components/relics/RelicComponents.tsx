@@ -4,7 +4,6 @@ import { StyleSheet, Platform, View, TouchableOpacity, Image } from 'react-nativ
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import RelicDetailsModal from './RelicDetailsModal'; // Import the separated modal component
 
 // Define interfaces for our data structures (moved here for better organization)
 interface Stats {
