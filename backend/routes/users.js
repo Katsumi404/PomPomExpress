@@ -99,17 +99,6 @@ router.post('/addLightConeToCollection', async (req, res) => {
 
     const { lightConesCollection } = await getUserCollections(userId);
 
-    // Check if light cone already exists in collection
-    const existingLightCone = await lightConesCollection.findOne({
-      userId: new ObjectId(userId),
-      lightConeId: new ObjectId(lightConeId)
-    });
-
-    if (existingLightCone) {
-      return res.status(409).json({ message: "Light Cone already in collection" });
-    }
-
-    // Add light cone to user's collection
     const result = await lightConesCollection.insertOne({
       userId: new ObjectId(userId),
       lightConeId: new ObjectId(lightConeId),
@@ -134,7 +123,7 @@ router.post('/addLightConeToCollection', async (req, res) => {
 // Add a relic to user's collection
 router.post('/addRelicToCollection', async (req, res) => {
   try {
-    const { userId, relicId, mainStats, subStats } = req.body;  // Include mainStats and subStats
+    const { userId, relicId, mainStats, subStats } = req.body;
 
     if (!userId || !relicId) {
       return res.status(400).json({ error: "User ID and Relic ID are required" });
@@ -142,24 +131,13 @@ router.post('/addRelicToCollection', async (req, res) => {
 
     const { relicsCollection } = await getUserCollections(userId);
 
-    // Check if relic already exists in collection
-    const existingRelic = await relicsCollection.findOne({
-      userId: new ObjectId(userId),
-      relicId: new ObjectId(relicId)
-    });
-
-    if (existingRelic) {
-      return res.status(409).json({ message: "Relic already in collection" });
-    }
-
-    // Add relic to user's collection
     const result = await relicsCollection.insertOne({
       userId: new ObjectId(userId),
       relicId: new ObjectId(relicId),
       dateAdded: new Date(),
       level: 1,
-      mainStats: mainStats || {},  // Store main stats
-      subStats: subStats || {},    // Store sub stats
+      mainStats: mainStats || {},
+      subStats: subStats || {},
       isFavorite: false
     });
 
