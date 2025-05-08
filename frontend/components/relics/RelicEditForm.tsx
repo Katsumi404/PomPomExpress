@@ -229,7 +229,7 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
             <StatPicker
               selectedStat={statName}
               onChange={(newStat) => handleStatKeyChange('mainStats', statName, newStat)}
-              stats={['HP', 'Attack', 'Defense', 'Speed', 'Crit Rate', 'Crit Damage', 'Effect Hit Rate', 'Effect RES', 'Break Effect']}
+              stats={['HP', 'Attack', 'Defense', 'Speed', 'Crit Rate', 'Crit Damage', 'Effect Hit Rate', 'Effect RES', 'Break Effect', 'Attack%', 'Defense%', 'Speed%', 'HP%', 'Crit Rate%', 'Crit Damage%']}
             />
             <TextInput
               style={styles.statValueInput}
@@ -264,7 +264,8 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
             <StatPicker
               selectedStat={statName}
               onChange={(newStat) => handleStatKeyChange('subStats', statName, newStat)}
-              stats={['HP', 'Attack', 'Defense', 'Speed', 'Crit Rate', 'Crit Damage', 'Effect Hit Rate', 'Effect RES', 'Break Effect']}
+              stats={['HP', 'Attack', 'Defense', 'Speed', 'Crit Rate', 'Crit Damage', 'Effect Hit Rate', 'Effect RES', 'Break Effect', 'Attack%', 'Defense%', 'Speed%', 'HP%', 'Crit Rate%', 'Crit Damage%']}
+
             />
             <TextInput
               style={styles.statValueInput}
