@@ -86,11 +86,11 @@ export default function ProfileScreen(): JSX.Element {
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const itemsPerPage = 3; // Reduced from 5 to better fit in profile view
+  const itemsPerPage = 3;
 
   // Navigate to edit profile screen
   const navigateToEditProfile = () => {
-    router.push('/profile/editProfileScreen');
+    router.push('../editProfileScreen');
   };
 
   // Refresh profile and relics data
@@ -339,8 +339,8 @@ export default function ProfileScreen(): JSX.Element {
         <View style={styles.buttonContainer}>
           {/* Updated to use router navigation */}
           <Button 
-            title="Edit Profile"
-            onPress={navigateToEditProfile}
+            title="Edit Profile" 
+            onPress={navigateToEditProfile} 
             color={Colors.primary}
           />
         </View>
