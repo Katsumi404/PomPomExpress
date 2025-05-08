@@ -10,6 +10,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { RelicCard, PaginationControls, setOnPressFavorite } from '@/components/relics/RelicComponents';
 import RelicDetailsModal from '@/components/relics/RelicDetailsModal';
+import { useRouter } from 'expo-router'; 
 
 interface User {
   id?: string;
@@ -25,6 +26,7 @@ interface AuthContextType {
   loading: boolean;
   getProfile: () => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile?: (profileData: Partial<User>) => Promise<boolean>; // Add updateProfile to the interface
 }
 
 // Define interfaces for relic data structures
@@ -68,6 +70,7 @@ export default function ProfileScreen(): JSX.Element {
   const { apiUrl } = useConfig();
   const colorScheme = useColorScheme();
   const themeColors = Colors[colorScheme];
+  const router = useRouter(); // Initialize router
 
   // Relic state variables
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
@@ -78,11 +81,33 @@ export default function ProfileScreen(): JSX.Element {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [updatingRelic, setUpdatingRelic] = useState<boolean>(false);
   const [removingRelic, setRemovingRelic] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false); // Add refresh state
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const itemsPerPage = 3; // Reduced from 5 to better fit in profile view
+
+  // Navigate to edit profile screen
+  const navigateToEditProfile = () => {
+    router.push('/profile/editProfileScreen');
+  };
+
+  // Refresh profile and relics data
+  const refreshProfileData = async () => {
+    setIsRefreshing(true);
+    try {
+      await getProfile();
+      if (user && user.id) {
+        await fetchUserRelics();
+      }
+    } catch (error) {
+      console.error('Failed to refresh profile data:', error);
+      Alert.alert('Error', 'Failed to refresh profile data. Please try again.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     // Fetch user profile only if it's not already loaded
@@ -266,10 +291,13 @@ export default function ProfileScreen(): JSX.Element {
     </ThemedView>
   );
 
-  if (loading) {
+  if (loading || isRefreshing) {
     return (
       <ThemedView style={styles.container}>
         <ActivityIndicator size="large" color={themeColors.tint} />
+        {isRefreshing && (
+          <ThemedText style={styles.loadingText}>Refreshing profile data...</ThemedText>
+        )}
       </ThemedView>
     );
   }
@@ -309,9 +337,10 @@ export default function ProfileScreen(): JSX.Element {
         </View>
 
         <View style={styles.buttonContainer}>
+          {/* Updated to use router navigation */}
           <Button 
             title="Edit Profile"
-            onPress={() => console.log('Navigate to Edit Profile Screen')}
+            onPress={navigateToEditProfile}
             color={Colors.primary}
           />
         </View>
@@ -360,12 +389,20 @@ export default function ProfileScreen(): JSX.Element {
           )}
         </ThemedView>
 
-        <View style={styles.logoutContainer}>
+        <View style={styles.actionButtonsContainer}>
           <Button 
-            title="Logout"
-            onPress={async () => await logout()}
-            color={Colors.danger}
+            title="Refresh Profile" 
+            onPress={refreshProfileData}
+            color={Colors.secondary}
           />
+          
+          <View style={styles.logoutContainer}>
+            <Button 
+              title="Logout"
+              onPress={async () => await logout()}
+              color={Colors.danger}
+            />
+          </View>
         </View>
 
         {/* Relic Details Modal */}
@@ -435,6 +472,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
+    textAlign: 'center',
   },
   errorText: {
     color: 'red',
@@ -456,9 +494,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: '#808080',
   },
-  logoutContainer: {
+  actionButtonsContainer: {
     marginTop: 8,
     marginBottom: 32,
+    gap: 16,
+  },
+  logoutContainer: {
+    marginTop: 8,
   },
   errorMessage: {
     fontSize: 18,

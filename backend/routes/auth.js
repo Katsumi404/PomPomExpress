@@ -122,4 +122,56 @@ router.get('/profile',
   }
 );
 
+// Update user profile (protected route)
+router.put('/updateProfile',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const { firstName, lastName, email, birthday } = req.body;
+      
+      // Optional: Validate inputs
+      if (!firstName && !lastName && !email && !birthday) {
+        return res.status(400).json({ message: 'No fields to update provided' });
+      }
+      
+      // Find the user and update their profile
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            ...(firstName && { firstName }),
+            ...(lastName && { lastName }),
+            ...(email && { email }),
+            ...(birthday && { birthday })
+          }
+        },
+        { new: true } // Return the updated document
+      );
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Return updated user data
+      res.json({
+        success: true,
+        user: {
+          id: updatedUser._id,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          email: updatedUser.email,
+          birthday: updatedUser.birthday
+        }
+      });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      res.status(500).json({
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  }
+);
+
 module.exports = router;
