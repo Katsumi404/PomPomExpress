@@ -124,11 +124,20 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
 
   // Add a new stat
   const handleAddStat = (statType: 'mainStats' | 'subStats') => {
+    if (statType === 'mainStats' && Object.keys(formData.mainStats).length >= 1) {
+      return; 
+    }
+  
+    if (statType === 'subStats' && Object.keys(formData.subStats).length >= 4) {
+      return; 
+    }
+  
+    const newStatKey = `${statType} Stat ${Date.now()}`; // Generate unique key for each new stat
     setFormData(prev => ({
       ...prev,
       [statType]: {
         ...prev[statType],
-        'New Stat': 0
+        [newStatKey]: 0  
       }
     }));
   };

@@ -24,6 +24,7 @@ interface UserRelic {
   setName?: string;
   description?: string;
   imageUrl?: string;
+  pieceType?: string; 
 }
 
 interface RelicDetails {
