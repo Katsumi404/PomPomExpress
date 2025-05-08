@@ -10,8 +10,8 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfig } from'@/contexts/ConfigContext';
-import { RelicCard, PaginationControls, setOnPressFavorite } from '@/components/relics/RelicComponents'; 
-import RelicDetailsModal from '@/components/relics/RelicDetailsModal';
+import { RelicCard, PaginationControls } from '@/components/relics/RelicComponents'; 
+import { StatPicker } from '@/components/ui/StatPicker';
 
 // Define interfaces for our data structures
 interface Stats { [key: string]: number; }
@@ -124,24 +124,16 @@ export default function OptimizerScreen(): JSX.Element {
 
           {/* Stat Pickers */}
           <View style={styles.pickersRow}>
-            <Picker
-              selectedValue={statA}
-              style={styles.picker}
-              onValueChange={(val) => setStatA(val)}
-            >
-              {allStats.map((s) => (
-                <Picker.Item key={s} label={s} value={s} />
-              ))}
-            </Picker>
-            <Picker
-              selectedValue={statB}
-              style={styles.picker}
-              onValueChange={(val) => setStatB(val)}
-            >
-              {allStats.map((s) => (
-                <Picker.Item key={s} label={s} value={s} />
-              ))}
-            </Picker>
+            <StatPicker
+              selectedStat={statA}
+              onChange={setStatA}
+              stats={allStats}
+            />
+            <StatPicker
+              selectedStat={statB}
+              onChange={setStatB}
+              stats={allStats}
+            />
           </View>
           <Button title="Run Optimizer" onPress={runOptimizer} />
 

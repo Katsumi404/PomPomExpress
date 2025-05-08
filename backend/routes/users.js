@@ -123,11 +123,16 @@ router.post('/addLightConeToCollection', async (req, res) => {
 // Add a relic to user's collection
 router.post('/addRelicToCollection', async (req, res) => {
   try {
-    const { userId, relicId, mainStats, subStats } = req.body;
+    const { userId, relicId, mainStats, subStats, pieceType } = req.body;
 
     if (!userId || !relicId) {
       return res.status(400).json({ error: "User ID and Relic ID are required" });
     }
+
+    const validPieceTypes = ['Head', 'Hands', 'Body', 'Feet', 'Planar Sphere', 'Link Rope'];
+    const defaultPieceType = pieceType && validPieceTypes.includes(pieceType) 
+      ? pieceType 
+      : 'Head'; 
 
     const { relicsCollection } = await getUserCollections(userId);
 
@@ -138,12 +143,14 @@ router.post('/addRelicToCollection', async (req, res) => {
       level: 1,
       mainStats: mainStats || {},
       subStats: subStats || {},
-      isFavorite: false
+      isFavorite: false,
+      pieceType: defaultPieceType
     });
 
     res.status(201).json({
       message: "Relic added to collection",
-      id: result.insertedId
+      id: result.insertedId,
+      pieceType: defaultPieceType
     });
     console.log(`✅ Relic added to collection for user: ${userId}`);
   } catch (error) {
@@ -262,6 +269,7 @@ router.get('/getUserRelics/:userId', async (req, res) => {
           level: 1,
           isFavorite: 1,
           dateAdded: 1,
+          pieceType: 1, 
         },
       },
     ];
@@ -346,16 +354,17 @@ router.put('/updateUserLightCone/:id', async (req, res) => {
 // Update user's relic
 router.put('/updateUserRelic/:id', async (req, res) => {
   try {
-    const { level, mainStats, subStats, isFavorite } = req.body; // Include mainStats and subStats
+    const { level, mainStats, subStats, isFavorite, pieceType } = req.body; 
     const relicId = req.params.id;
 
     const { relicsCollection } = await getUserCollections(req.body.userId);
 
     const updateFields = {};
     if (level !== undefined) updateFields.level = level;
-    if (mainStats !== undefined) updateFields.mainStats = mainStats; // Update main stats
-    if (subStats !== undefined) updateFields.subStats = subStats;    // Update sub stats
+    if (mainStats !== undefined) updateFields.mainStats = mainStats; 
+    if (subStats !== undefined) updateFields.subStats = subStats;    
     if (isFavorite !== undefined) updateFields.isFavorite = isFavorite;
+    if (pieceType !== undefined) updateFields.pieceType = pieceType;
 
     const result = await relicsCollection.updateOne(
       { _id: new ObjectId(relicId) },

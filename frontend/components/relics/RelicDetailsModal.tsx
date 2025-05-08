@@ -31,6 +31,7 @@ interface UserRelic {
   setName?: string;
   description?: string;
   imageUrl?: string;
+  pieceType?: string; 
 }
 
 interface RelicDetails {
@@ -155,6 +156,10 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
                       size={24}
                       color={userRelic.isFavorite ? '#FFD700' : '#808080'}
                     />
+                  </ThemedView>
+                  <ThemedView style={styles.detailRow}>
+                    <ThemedText style={styles.label}>Piece Type:</ThemedText>
+                    <ThemedText>{userRelic.pieceType || 'Head'}</ThemedText>
                   </ThemedView>
                   
                   {displayRelic.description && (

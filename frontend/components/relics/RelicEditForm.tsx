@@ -9,6 +9,7 @@ import {
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { StatPicker } from '@/components/ui/StatPicker'; 
 
 // Define interfaces
 interface Stats {
@@ -28,6 +29,7 @@ interface UserRelic {
   setName?: string;
   description?: string;
   imageUrl?: string;
+  pieceType?: string;
 }
 
 interface RelicDetails {
@@ -43,6 +45,7 @@ interface RelicDetails {
   imageUrl?: string;
   schemaVersion?: string;
   updatedAt?: string | null;
+  pieceType?: string; // Added pieceType field
 }
 
 interface RelicEditFormProps {
@@ -51,6 +54,18 @@ interface RelicEditFormProps {
   onSave: (formData: Partial<UserRelic>) => void;
   onCancel: () => void;
 }
+
+// Define relic piece types for Honkai Star Rail
+const RELIC_PIECE_TYPES = [
+  // Relic pieces (4-piece sets)
+  'Head', 
+  'Hands', 
+  'Body', 
+  'Feet',
+  // Ornament pieces (2-piece sets)
+  'Planar Sphere',
+  'Link Rope'
+];
 
 const RelicEditForm: React.FC<RelicEditFormProps> = ({ 
   relic, 
@@ -65,6 +80,7 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
     isFavorite: userRelic?.isFavorite || false,
     mainStats: { ...userRelic?.mainStats } || {},
     subStats: { ...userRelic?.subStats } || {},
+    pieceType: userRelic?.pieceType || 'Head', // Default to Head if not specified
   });
 
   // Update form data if userRelic changes
@@ -76,6 +92,7 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
         isFavorite: userRelic.isFavorite || false,
         mainStats: { ...userRelic.mainStats } || {},
         subStats: { ...userRelic.subStats } || {},
+        pieceType: userRelic.pieceType || 'Head', 
       });
     }
   }, [userRelic]);
@@ -143,6 +160,14 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
     }));
   };
 
+  // Handle piece type change
+  const handlePieceTypeChange = (pieceType: string) => {
+    setFormData(prev => ({
+      ...prev,
+      pieceType
+    }));
+  };
+
   // Handle save button
   const handleSave = () => {
     onSave(formData);
@@ -150,62 +175,31 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
 
   return (
     <ThemedView style={styles.container}>
+      {/* Piece Type Picker */}
       <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Basic Information</ThemedText>
-        
-        <ThemedView style={styles.formRow}>
-          <ThemedText style={styles.label}>Name:</ThemedText>
-          <TextInput
-            style={styles.textInput}
-            value={formData.name as string}
-            onChangeText={(text) => handleInputChange('name', text)}
-            placeholder="Relic name"
-          />
-        </ThemedView>
-
-        <ThemedView style={styles.formRow}>
-          <ThemedText style={styles.label}>Level:</ThemedText>
-          <ThemedView style={styles.levelControlContainer}>
-            <TouchableOpacity 
-              style={[styles.levelButton, styles.decrementButton]}
-              onPress={() => handleLevelChange(String(Math.max(1, (formData.level || 1) - 1)))}
+        <ThemedText style={styles.sectionTitle}>
+          Piece Type: <ThemedText style={styles.currentValue}>{formData.pieceType}</ThemedText>
+        </ThemedText>
+        <ThemedView style={styles.pieceTypeContainer}>
+          {RELIC_PIECE_TYPES.map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.pieceTypeButton,
+                formData.pieceType === type && styles.selectedPieceType
+              ]}
+              onPress={() => handlePieceTypeChange(type)}
             >
-              <ThemedText style={styles.levelButtonText}>-</ThemedText>
+              <ThemedText 
+                style={[
+                  styles.pieceTypeText,
+                  formData.pieceType === type && styles.selectedPieceTypeText
+                ]}
+              >
+                {type}
+              </ThemedText>
             </TouchableOpacity>
-            
-            <TextInput
-              style={styles.levelInput}
-              value={String(formData.level)}
-              onChangeText={handleLevelChange}
-              keyboardType="numeric"
-              maxLength={2}
-            />
-            
-            <TouchableOpacity 
-              style={[styles.levelButton, styles.incrementButton]}
-              onPress={() => handleLevelChange(String(Math.min(15, (formData.level || 1) + 1)))}
-            >
-              <ThemedText style={styles.levelButtonText}>+</ThemedText>
-            </TouchableOpacity>
-            
-            <ThemedText style={styles.maxLevelText}>/15</ThemedText>
-          </ThemedView>
-        </ThemedView>
-
-        <ThemedView style={styles.formRow}>
-          <ThemedText style={styles.label}>Favorite:</ThemedText>
-          <ThemedView style={styles.favoriteContainer}>
-            <Switch
-              value={formData.isFavorite}
-              onValueChange={(value) => handleInputChange('isFavorite', value)}
-            />
-            <IconSymbol
-              name={formData.isFavorite ? 'star-filled' : 'star'}
-              size={24}
-              color={formData.isFavorite ? '#FFD700' : '#808080'}
-              style={styles.favoriteIcon}
-            />
-          </ThemedView>
+          ))}
         </ThemedView>
       </ThemedView>
 
@@ -220,13 +214,13 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
             <ThemedText style={styles.addButtonText}>Add Stat</ThemedText>
           </TouchableOpacity>
         </ThemedView>
-        
+
         {Object.entries(formData.mainStats || {}).map(([statName, statValue]) => (
           <ThemedView key={`main-${statName}`} style={styles.statRow}>
-            <TextInput
-              style={styles.statNameInput}
-              value={statName}
-              onChangeText={(text) => handleStatKeyChange('mainStats', statName, text)}
+            <StatPicker
+              selectedStat={statName}
+              onChange={(newStat) => handleStatKeyChange('mainStats', statName, newStat)}
+              stats={['HP', 'Attack', 'Defense', 'Speed', 'Crit Rate', 'Crit Damage', 'Effect Hit Rate', 'Effect RES', 'Break Effect']}
             />
             <TextInput
               style={styles.statValueInput}
@@ -244,7 +238,7 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
         ))}
       </ThemedView>
 
-      {/* Sub Stats Section */}
+      {/* Substats Section */}
       <ThemedView style={styles.section}>
         <ThemedView style={styles.sectionHeader}>
           <ThemedText style={styles.sectionTitle}>Sub Stats</ThemedText>
@@ -255,13 +249,13 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
             <ThemedText style={styles.addButtonText}>Add Stat</ThemedText>
           </TouchableOpacity>
         </ThemedView>
-        
+
         {Object.entries(formData.subStats || {}).map(([statName, statValue]) => (
           <ThemedView key={`sub-${statName}`} style={styles.statRow}>
-            <TextInput
-              style={styles.statNameInput}
-              value={statName}
-              onChangeText={(text) => handleStatKeyChange('subStats', statName, text)}
+            <StatPicker
+              selectedStat={statName}
+              onChange={(newStat) => handleStatKeyChange('subStats', statName, newStat)}
+              stats={['HP', 'Attack', 'Defense', 'Speed', 'Crit Rate', 'Crit Damage', 'Effect Hit Rate', 'Effect RES', 'Break Effect']}
             />
             <TextInput
               style={styles.statValueInput}
@@ -277,6 +271,54 @@ const RelicEditForm: React.FC<RelicEditFormProps> = ({
             </TouchableOpacity>
           </ThemedView>
         ))}
+      </ThemedView>
+
+      {/* Level Section */}
+      <ThemedView style={styles.section}>
+        <ThemedText style={styles.sectionTitle}>Level</ThemedText>
+        <ThemedView style={styles.levelControlContainer}>
+          <TouchableOpacity
+            style={[styles.levelButton, styles.decrementButton]}
+            onPress={() => {
+              if ((formData.level || 1) > 1) {
+                handleLevelChange(String((formData.level || 1) - 1));
+              }
+            }}
+          >
+            <ThemedText style={styles.levelButtonText}>-</ThemedText>
+          </TouchableOpacity>
+          
+          <TextInput
+            style={styles.levelInput}
+            value={String(formData.level || 1)}
+            onChangeText={handleLevelChange}
+            keyboardType="numeric"
+          />
+          
+          <TouchableOpacity
+            style={[styles.levelButton, styles.incrementButton]}
+            onPress={() => {
+              if ((formData.level || 1) < 15) {
+                handleLevelChange(String((formData.level || 1) + 1));
+              }
+            }}
+          >
+            <ThemedText style={styles.levelButtonText}>+</ThemedText>
+          </TouchableOpacity>
+          
+          <ThemedText style={styles.maxLevelText}>Max: 15</ThemedText>
+        </ThemedView>
+      </ThemedView>
+
+      {/* Favorite Section */}
+      <ThemedView style={styles.section}>
+        <ThemedView style={styles.favoriteContainer}>
+          <ThemedText style={styles.label}>Favorite:</ThemedText>
+          <Switch
+            value={formData.isFavorite || false}
+            onValueChange={(value) => handleInputChange('isFavorite', value)}
+          />
+        </ThemedView>
       </ThemedView>
 
       {/* Action Buttons */}
@@ -332,6 +374,33 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 8,
+  },
+  pieceTypeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  pieceTypeButton: {
+    width: '48%',
+    padding: 10,
+    marginBottom: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  selectedPieceType: {
+    backgroundColor: '#3498db',
+    borderColor: '#2980b9',
+  },
+  pieceTypeText: {
+    fontSize: 14,
+  },
+  selectedPieceTypeText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   levelControlContainer: {
     flexDirection: 'row',
