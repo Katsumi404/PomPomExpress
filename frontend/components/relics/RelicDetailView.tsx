@@ -10,19 +10,30 @@ const STAT_TYPES = [
   'HP', 'Attack', 'Defense', 'Speed', 'Crit Rate', 'Crit Damage', 
   'Effect Hit Rate', 'Effect RES', 'Break Effect', 'Attack%', 
   'Defense%', 'Speed%', 'HP%', 'Crit Rate%', 'Crit Damage%'
-];
+] as const;
+
+type StatType = typeof STAT_TYPES[number];
 
 // Stat formatting helper
-const formatStatValue = (value, statName) => {
+const formatStatValue = (value: number, statName: string) => {
   const isPercentageStat = statName.includes('%');
-  if (isPercentageStat) {
-    return `+${value.toFixed(3)}%`;
-  }
-  return `+${value.toFixed(3)}`;
+  return isPercentageStat ? `+${value.toFixed(1)}%` : `+${value.toFixed(1)}`;
 };
 
+// Validates and filters stat entries
+const validStats = (stats: Stats): [string, number][] =>
+  Object.entries(stats).filter(([stat]) => STAT_TYPES.includes(stat as StatType));
+
+// Reusable row component
+const InfoRow = ({ label, value }: { label: string; value: string | number }) => (
+  <ThemedView style={styles.basicInfoRow}>
+    <ThemedText style={styles.label}>{label}</ThemedText>
+    <ThemedText style={styles.value}>{value}</ThemedText>
+  </ThemedView>
+);
+
 // Stats display component
-const StatDisplay = ({ statName, value }) => (
+const StatDisplay = ({ statName, value }: { statName: string; value: number }) => (
   <ThemedView style={styles.statItem}>
     <ThemedText style={styles.statName}>{statName}</ThemedText>
     <ThemedText style={styles.statValue}>
@@ -59,11 +70,9 @@ interface RelicDetailViewProps {
 }
 
 export const RelicDetailView = ({ relic }: RelicDetailViewProps): JSX.Element => {
-  // Check if relic has valid stats objects
   const hasMainStats = relic.mainStats && Object.keys(relic.mainStats).length > 0;
   const hasSubStats = relic.subStats && Object.keys(relic.subStats).length > 0;
 
-  // Log stats for debugging
   React.useEffect(() => {
     console.log('Relic main stats:', relic.mainStats);
     console.log('Relic sub stats:', relic.subStats);
@@ -87,35 +96,12 @@ export const RelicDetailView = ({ relic }: RelicDetailViewProps): JSX.Element =>
       <ThemedView style={styles.detailsSection}>
         <ThemedView style={styles.row}>
           <ThemedView style={styles.infoCol}>
-            {/* Basic info */}
-            <ThemedView style={styles.basicInfoRow}>
-              <ThemedText style={styles.label}>Rarity:</ThemedText>
-              <ThemedText style={styles.rarityStars}>
-                {"★".repeat(relic.rarity)}
-              </ThemedText>
-            </ThemedView>
-
-            <ThemedView style={styles.basicInfoRow}>
-              <ThemedText style={styles.label}>Level:</ThemedText>
-              <ThemedText style={styles.value}>{relic.level}</ThemedText>
-            </ThemedView>
-
-            {relic.pieceType && (
-              <ThemedView style={styles.basicInfoRow}>
-                <ThemedText style={styles.label}>Type:</ThemedText>
-                <ThemedText style={styles.value}>{relic.pieceType}</ThemedText>
-              </ThemedView>
-            )}
-
-            {relic.setName && (
-              <ThemedView style={styles.basicInfoRow}>
-                <ThemedText style={styles.label}>Set:</ThemedText>
-                <ThemedText style={styles.setName}>{relic.setName}</ThemedText>
-              </ThemedView>
-            )}
+            <InfoRow label="Rarity:" value={"★".repeat(relic.rarity)} />
+            <InfoRow label="Level:" value={relic.level} />
+            {relic.pieceType && <InfoRow label="Type:" value={relic.pieceType} />}
+            {relic.setName && <InfoRow label="Set:" value={relic.setName} />}
           </ThemedView>
 
-          {/* Image if available */}
           {relic.imageUrl && (
             <ThemedView style={styles.imageContainer}>
               <Image 
@@ -129,32 +115,33 @@ export const RelicDetailView = ({ relic }: RelicDetailViewProps): JSX.Element =>
 
         {/* Stats section */}
         <ThemedView style={styles.statsSection}>
-          {/* Main stats */}
           {hasMainStats && (
             <ThemedView style={styles.statsBlock}>
               <ThemedText style={styles.statsTitle}>Main Stats</ThemedText>
               <ThemedView style={styles.statsGrid}>
-                {Object.entries(relic.mainStats).map(([stat, value]) => (
+                {validStats(relic.mainStats).map(([stat, value]) => (
                   <StatDisplay key={stat} statName={stat} value={value} />
                 ))}
               </ThemedView>
             </ThemedView>
           )}
 
-          {/* Sub stats */}
           {hasSubStats && (
             <ThemedView style={styles.statsBlock}>
               <ThemedText style={styles.statsTitle}>Sub Stats</ThemedText>
               <ThemedView style={styles.statsGrid}>
-                {Object.entries(relic.subStats).map(([stat, value]) => (
+                {validStats(relic.subStats).map(([stat, value]) => (
                   <StatDisplay key={stat} statName={stat} value={value} />
                 ))}
               </ThemedView>
             </ThemedView>
           )}
+
+          {!hasMainStats && !hasSubStats && (
+            <ThemedText style={styles.noStatsText}>No stats available</ThemedText>
+          )}
         </ThemedView>
 
-        {/* Description if available */}
         {relic.description && (
           <ThemedView style={styles.descriptionContainer}>
             <ThemedText style={styles.descriptionText} numberOfLines={2}>
@@ -277,6 +264,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: Colors.primary,
+  },
+  noStatsText: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginVertical: 6,
   },
   descriptionContainer: {
     marginTop: 6,

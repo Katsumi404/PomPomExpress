@@ -3,7 +3,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SymbolWeight } from 'expo-symbols';
 import React from 'react';
-import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
+import { OpaqueColorValue, StyleProp, ViewStyle, Platform } from 'react-native';
 
 // Add your SFSymbol to MaterialIcons mappings here.
 const MAPPING = {
@@ -15,7 +15,9 @@ const MAPPING = {
   'group.fill': 'group',
   'sparkles': 'auto-fix-high',
   'plus.slash.minus': 'calculate',
-  'settings': 'settings'
+  'settings': 'settings',
+  'star.fill': 'star', 
+  'star': 'star-border',
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],
@@ -42,5 +44,13 @@ export function IconSymbol({
   style?: StyleProp<ViewStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  // Platform-specific icon names
+  const iconName =
+    Platform.OS === 'ios'
+      ? name === 'star.fill'
+        ? 'star.fill' // Use the filled star for iOS
+        : 'star' // Use the unfilled star for iOS
+      : MAPPING[name] || 'star'; // Default to MaterialIcons for Android/Web
+
+  return <MaterialIcons color={color} size={size} name={iconName} style={style} />;
 }

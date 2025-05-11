@@ -1,6 +1,9 @@
 import { LogBox } from 'react-native';
 
-LogBox.ignoreLogs(['Text strings must be rendered within a <Text> component.']);
+LogBox.ignoreLogs([
+  'Text strings must be rendered within a <Text> component.',
+  'Expected static flag was missing',
+]);
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';

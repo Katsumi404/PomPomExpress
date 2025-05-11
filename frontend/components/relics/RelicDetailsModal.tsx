@@ -5,12 +5,13 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Image, 
-  ActivityIndicator 
+  useColorScheme
 } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Collapsible } from '@/components/Collapsible';
+import { Colors } from '@/constants/Colors';
 import RelicEditForm from './RelicEditForm';
 
 // Define interfaces
@@ -68,6 +69,8 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
 }) => {
   if (!relic || !userRelic) return null;
 
+  const scheme = useColorScheme();
+  const theme = Colors[scheme || 'light'];
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [localRelicData, setLocalRelicData] = useState<UserRelic>(userRelic);
 
@@ -105,9 +108,19 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
       onRequestClose={onClose}
     >
       <ThemedView style={styles.modalOverlay}>
-        <ThemedView style={styles.modalContent}>
+        <ThemedView 
+          style={[
+            styles.modalContent, 
+            { backgroundColor: theme.background }
+          ]}
+        >
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            <ThemedText style={styles.modalTitle}>{displayRelic.name}</ThemedText>
+            <ThemedText 
+              style={[styles.modalTitle, { color: theme.text }]}
+              type="title"
+            >
+              {displayRelic.name}
+            </ThemedText>
             
             {isEditing ? (
               <RelicEditForm
@@ -132,40 +145,41 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
                 <ThemedView style={styles.detailsContainer}>
                   {displayRelic.setName && (
                     <ThemedView style={styles.detailRow}>
-                      <ThemedText style={styles.label}>Set:</ThemedText>
-                      <ThemedText>{displayRelic.setName}</ThemedText>
+                      <ThemedText style={[styles.label, { color: theme.text }]}>Set:</ThemedText>
+                      <ThemedText style={{ color: theme.tint }}>{displayRelic.setName}</ThemedText>
                     </ThemedView>
                   )}
                   
                   <ThemedView style={styles.detailRow}>
-                    <ThemedText style={styles.label}>Rarity:</ThemedText>
-                    <ThemedText style={styles.rarityStars}>
+                    <ThemedText style={[styles.label, { color: theme.text }]}>Rarity:</ThemedText>
+                    <ThemedText style={[styles.rarityStars, { color: theme.tint }]}>
                       {"★".repeat(displayRelic.rarity)}
                     </ThemedText>
                   </ThemedView>
                   
                   <ThemedView style={styles.detailRow}>
-                    <ThemedText style={styles.label}>Level:</ThemedText>
-                    <ThemedText>{userRelic.level}/15</ThemedText>
+                    <ThemedText style={[styles.label, { color: theme.text }]}>Level:</ThemedText>
+                    <ThemedText style={{ color: theme.text }}>{userRelic.level}/15</ThemedText>
                   </ThemedView>
                   
                   <ThemedView style={styles.detailRow}>
-                    <ThemedText style={styles.label}>Favorite:</ThemedText>
-                    <IconSymbol
-                      name={userRelic.isFavorite ? 'star-filled' : 'star'}
-                      size={24}
-                      color={userRelic.isFavorite ? '#FFD700' : '#808080'}
+                    <ThemedText style={[styles.label, { color: theme.text }]}>Favorite:</ThemedText>
+                    <IconSymbol 
+                      name={userRelic.isFavorite ? "star.fill" : "star"} 
+                      size={24} 
+                      color={userRelic.isFavorite ? theme.tint : theme.icon} 
                     />
                   </ThemedView>
+
                   <ThemedView style={styles.detailRow}>
-                    <ThemedText style={styles.label}>Piece Type:</ThemedText>
-                    <ThemedText>{userRelic.pieceType || 'Head'}</ThemedText>
+                    <ThemedText style={[styles.label, { color: theme.text }]}>Piece Type:</ThemedText>
+                    <ThemedText style={{ color: theme.text }}>{userRelic.pieceType || 'Head'}</ThemedText>
                   </ThemedView>
                   
                   {displayRelic.description && (
                     <ThemedView style={styles.descriptionContainer}>
-                      <ThemedText style={styles.label}>Description:</ThemedText>
-                      <ThemedText style={styles.descriptionText}>
+                      <ThemedText style={[styles.label, { color: theme.text }]}>Description:</ThemedText>
+                      <ThemedText style={[styles.descriptionText, { color: theme.secondaryText }]}>
                         {displayRelic.description}
                       </ThemedText>
                     </ThemedView>
@@ -178,8 +192,8 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
                     <ThemedView style={styles.statsContainer}>
                       {Object.entries(userRelic.mainStats).map(([stat, value]) => (
                         <ThemedView key={stat} style={styles.statRow}>
-                          <ThemedText>{stat}:</ThemedText>
-                          <ThemedText>{value}</ThemedText>
+                          <ThemedText style={{ color: theme.text }}>{stat}:</ThemedText>
+                          <ThemedText style={{ color: theme.text }}>{value}</ThemedText>
                         </ThemedView>
                       ))}
                     </ThemedView>
@@ -192,8 +206,8 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
                     <ThemedView style={styles.statsContainer}>
                       {Object.entries(userRelic.subStats).map(([stat, value]) => (
                         <ThemedView key={stat} style={styles.statRow}>
-                          <ThemedText>{stat}:</ThemedText>
-                          <ThemedText>{value}</ThemedText>
+                          <ThemedText style={{ color: theme.text }}>{stat}:</ThemedText>
+                          <ThemedText style={{ color: theme.text }}>{value}</ThemedText>
                         </ThemedView>
                       ))}
                     </ThemedView>
@@ -203,11 +217,16 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
                 {/* Tags */}
                 {relic.tags && relic.tags.length > 0 && (
                   <ThemedView style={styles.tagsContainer}>
-                    <ThemedText style={styles.label}>Tags:</ThemedText>
+                    <ThemedText style={[styles.label, { color: theme.text }]}>Tags:</ThemedText>
                     <ThemedView style={styles.tagsWrapper}>
                       {relic.tags.map((tag) => (
-                        <ThemedView key={tag.id} style={styles.tagPill}>
-                          <ThemedText style={styles.tagText}>{tag.name}</ThemedText>
+                        <ThemedView 
+                          key={tag.id} 
+                          style={[styles.tagPill, { backgroundColor: theme.border }]}
+                        >
+                          <ThemedText style={[styles.tagText, { color: theme.text }]}>
+                            {tag.name}
+                          </ThemedText>
                         </ThemedView>
                       ))}
                     </ThemedView>
@@ -215,13 +234,15 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
                 )}
                 
                 <ThemedView style={styles.detailRow}>
-                  <ThemedText style={styles.label}>Date Added:</ThemedText>
-                  <ThemedText>{new Date(userRelic.dateAdded).toLocaleDateString()}</ThemedText>
+                  <ThemedText style={[styles.label, { color: theme.text }]}>Date Added:</ThemedText>
+                  <ThemedText style={{ color: theme.secondaryText }}>
+                    {new Date(userRelic.dateAdded).toLocaleDateString()}
+                  </ThemedText>
                 </ThemedView>
                 
                 <ThemedView style={styles.buttonsContainer}>
                   <TouchableOpacity 
-                    style={[styles.button, styles.editButton]}
+                    style={[styles.button, { backgroundColor: theme.tint }]}
                     onPress={() => setIsEditing(true)}
                   >
                     <ThemedText style={styles.buttonText}>Edit</ThemedText>
@@ -235,7 +256,7 @@ const RelicDetailsModal: React.FC<RelicDetailsModalProps> = ({
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
-                    style={[styles.button, styles.closeButton]}
+                    style={[styles.button, { backgroundColor: theme.border }]}
                     onPress={onClose}
                   >
                     <ThemedText style={styles.buttonText}>Close</ThemedText>
@@ -299,7 +320,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   rarityStars: {
-    color: '#FFD700',
+    fontSize: 16,
   },
   descriptionContainer: {
     marginTop: 10,
@@ -326,7 +347,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   tagPill: {
-    backgroundColor: '#E0E0E0',
     borderRadius: 15,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -345,14 +365,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 5,
   },
-  editButton: {
-    backgroundColor: '#3498db',
-  },
   removeButton: {
     backgroundColor: '#e74c3c',
-  },
-  closeButton: {
-    backgroundColor: '#7f8c8d',
   },
   buttonText: {
     color: '#fff',

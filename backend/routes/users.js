@@ -163,32 +163,69 @@ router.post('/addRelicToCollection', async (req, res) => {
 router.get('/getUserCharacters/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
+    
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
     const { charactersCollection } = await getUserCollections(userId);
+    
+    // Debug: Check if collection exists
+    if (!charactersCollection) {
+      return res.status(500).json({ error: "Failed to get characters collection" });
+    }
 
-    // Aggregate to join with HonkaiStarRailDB characters
+    // Aligned with relics pipeline pattern
     const pipeline = [
       {
         $match: { userId: new ObjectId(userId) }
       },
       {
         $lookup: {
-          from: 'HonkaiStarRailDB.characters',
+          from: 'characters', // Changed from 'HonkaiStarRailDB.characters' to match relics pattern
           localField: 'characterId',
           foreignField: '_id',
           as: 'characterDetails'
         }
       },
       {
-        $unwind: '$characterDetails'
+        $unwind: {
+          path: '$characterDetails',
+          preserveNullAndEmptyArrays: true  // Added to handle missing character details
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          characterId: 1,
+          name: { $ifNull: ['$characterDetails.name', 'Unknown Character'] },
+          rarity: { $ifNull: ['$characterDetails.rarity', 0] },
+          level: 1,
+          eidolon: 1, // Assuming this field exists in your data
+          isFavorite: 1,
+          dateAdded: 1,
+          element: '$characterDetails.element',
+          weaponType: '$characterDetails.weaponType',
+          description: '$characterDetails.description',
+          imageUrl: '$characterDetails.imageUrl'
+        }
       }
     ];
 
     const userCharacters = await charactersCollection.aggregate(pipeline).toArray();
+    
+    // Debug: Log the first result
+    if (userCharacters.length > 0) {
+      console.log("First character in response:", userCharacters[0]);
+    } else {
+      console.log("No characters found for user", userId);
+    }
+    
     res.json(userCharacters);
     console.log(`✅ Fetched characters for user: ${userId}`);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch user's characters" });
-    console.log(`❌ Failed to fetch user's characters: ${error.message}`);
+    console.error("Error fetching user characters:", error);
+    res.status(500).json({ error: "Failed to fetch user's characters", details: error.message });
   }
 });
 
@@ -196,32 +233,68 @@ router.get('/getUserCharacters/:userId', async (req, res) => {
 router.get('/getUserLightCones/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
+    
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
     const { lightConesCollection } = await getUserCollections(userId);
+    
+    // Debug: Check if collection exists
+    if (!lightConesCollection) {
+      return res.status(500).json({ error: "Failed to get light cones collection" });
+    }
 
-    // Aggregate to join with HonkaiStarRailDB light cones
     const pipeline = [
       {
         $match: { userId: new ObjectId(userId) }
       },
       {
         $lookup: {
-          from: 'HonkaiStarRailDB.lightCones',
+          from: 'lightCones', // Changed from 'HonkaiStarRailDB.lightCones' 
           localField: 'lightConeId',
           foreignField: '_id',
           as: 'lightConeDetails'
         }
       },
       {
-        $unwind: '$lightConeDetails'
+        $unwind: {
+          path: '$lightConeDetails',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          lightConeId: 1,
+          name: { $ifNull: ['$lightConeDetails.name', 'Unknown Light Cone'] },
+          rarity: { $ifNull: ['$lightConeDetails.rarity', 0] },
+          level: 1,
+          superimposition: 1,
+          stats: 1,
+          isFavorite: 1,
+          dateAdded: 1,
+          path: '$lightConeDetails.path',
+          description: '$lightConeDetails.description',
+          effect: '$lightConeDetails.effect'
+        }
       }
     ];
 
     const userLightCones = await lightConesCollection.aggregate(pipeline).toArray();
+    
+    // Debug: Log the first result
+    if (userLightCones.length > 0) {
+      console.log("First light cone in response:", userLightCones[0]);
+    } else {
+      console.log("No light cones found for user", userId);
+    }
+    
     res.json(userLightCones);
     console.log(`✅ Fetched light cones for user: ${userId}`);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch user's light cones" });
-    console.log(`❌ Failed to fetch user's light cones: ${error.message}`);
+    console.error("Error fetching user light cones:", error);
+    res.status(500).json({ error: "Failed to fetch user's light cones", details: error.message });
   }
 });
 

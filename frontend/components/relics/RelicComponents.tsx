@@ -1,16 +1,30 @@
 import React from 'react';
-import { StyleSheet, Platform, View, TouchableOpacity, Image } from 'react-native';
-
+import {
+  StyleSheet,
+  Platform,
+  View,
+  TouchableOpacity,
+  useColorScheme,
+} from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Colors } from '@/constants/Colors';
 
-// Define interfaces for our data structures (moved here for better organization)
-interface Stats {
+// Favorite handler
+let onPressFavorite: (id: string, currentStatus: boolean) => void = () => {};
+export const setOnPressFavorite = (
+  callback: (id: string, currentStatus: boolean) => void
+) => {
+  onPressFavorite = callback;
+};
+
+// Data interfaces for TypeScript
+export interface Stats {
   [key: string]: number;
 }
 
-interface UserRelic {
+export interface UserRelic {
   _id: string;
   relicId: string;
   name: string;
@@ -20,93 +34,90 @@ interface UserRelic {
   level: number;
   isFavorite: boolean;
   dateAdded: string;
-  // Add additional fields from the full relic
   setName?: string;
   description?: string;
   imageUrl?: string;
-  pieceType?: string; 
+  pieceType?: string;
 }
 
-interface RelicDetails {
-  _id: string;
-  name: string;
-  setName?: string;
-  rarity: number;
-  description?: string;
-  mainStats?: Stats;
-  subStats?: Stats;
-  tags?: Array<{ id: string; name: string }>;
-  releaseDate?: string;
-  imageUrl?: string;
-  schemaVersion?: string;
-  updatedAt?: string | null;
-}
-
-// Props interfaces
-interface RelicCardProps {
-  relic: UserRelic;
-  onPress: () => void;
-}
-
-interface PaginationControlsProps {
+export interface PaginationControlsProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }
 
-// Helper function to be set by the parent component
-let onPressFavorite: (id: string, currentStatus: boolean) => void = () => {};
+export const RelicCard = ({
+  relic,
+  onPress,
+}: {
+  relic: UserRelic;
+  onPress: () => void;
+}): JSX.Element => {
+  const scheme = useColorScheme() as 'light' | 'dark';
+  const theme = Colors[scheme];
 
-export const setOnPressFavorite = (callback: (id: string, currentStatus: boolean) => void) => {
-  onPressFavorite = callback;
-};
-
-export const RelicCard = ({ relic, onPress }: RelicCardProps): JSX.Element => {
   return (
     <TouchableOpacity onPress={onPress}>
-      <ThemedView style={styles.card}>
-        <ThemedView style={styles.cardHeader}>
-          <ThemedText type="title" style={styles.relicName}>
-            {relic.name || `Relic ID: ${relic.relicId?.substring(0, 8) || 'Unknown'}`}
+      <ThemedView
+        style={[
+          styles.card,
+          { backgroundColor: theme.background },
+          relic.isFavorite && {
+            borderWidth: 2,
+            borderColor: theme.tint,
+          },
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <ThemedText
+            type="title"
+            style={[styles.relicName, { color: theme.text }]}
+          >
+            {relic.name ||
+              `Relic ID: ${relic.relicId?.substring(0, 8) || 'Unknown'}`}
           </ThemedText>
           <TouchableOpacity
             onPress={() => onPressFavorite(relic._id, relic.isFavorite)}
             style={styles.favoriteButton}
           >
             <IconSymbol
-              name={relic.isFavorite ? 'star-filled' : 'star'}
+              name={relic.isFavorite ? 'star.fill' : 'star'}
               size={20}
-              color={relic.isFavorite ? '#FFD700' : '#808080'}
+              color={relic.isFavorite ? theme.tint : theme.icon}
             />
           </TouchableOpacity>
-        </ThemedView>
+        </View>
 
         <ThemedView style={styles.basicInfo}>
-          <ThemedView style={styles.infoRow}>
-            <ThemedText style={styles.rarity}>
+          <View style={styles.infoRow}>
+            <ThemedText style={[styles.rarity, { color: theme.tint }]}>
               {relic.rarity ? '★'.repeat(relic.rarity) : '⭒'}
             </ThemedText>
-            <ThemedText style={styles.level}>
+            <ThemedText style={[styles.level, { color: theme.text }]}>
               Level: {relic.level || 0}
             </ThemedText>
-          </ThemedView>
+          </View>
 
           {relic.setName && (
-            <ThemedText style={styles.setName}>
+            <ThemedText style={[styles.setName, { color: theme.tint }]}>
               Set: {relic.setName}
             </ThemedText>
           )}
 
           {relic.mainStats && Object.keys(relic.mainStats).length > 0 && (
-            <ThemedText style={styles.statsPreview}>
-              Main: {Object.entries(relic.mainStats)
-                .map(([key, value]) => `${key}: ${value}`)
+            <ThemedText style={[styles.statsPreview, { color: theme.secondaryText }]}>
+              Main:{' '}
+              {Object.entries(relic.mainStats)
+                .map(([k, v]) => `${k}: ${v}`)
                 .join(', ')}
             </ThemedText>
           )}
 
-          <ThemedText style={styles.dateAdded}>
-            Added: {relic.dateAdded ? new Date(relic.dateAdded).toLocaleDateString() : 'Unknown date'}
+          <ThemedText style={[styles.dateAdded, { color: theme.secondaryText }]}>
+            Added:{' '}
+            {relic.dateAdded
+              ? new Date(relic.dateAdded).toLocaleDateString()
+              : 'Unknown date'}
           </ThemedText>
         </ThemedView>
       </ThemedView>
@@ -114,31 +125,58 @@ export const RelicCard = ({ relic, onPress }: RelicCardProps): JSX.Element => {
   );
 };
 
-export const PaginationControls = ({ currentPage, totalPages, onPageChange }: PaginationControlsProps): JSX.Element => (
-  <ThemedView style={styles.paginationContainer}>
-    <TouchableOpacity
-      onPress={() => onPageChange(Math.max(1, currentPage - 1))}
-      disabled={currentPage === 1}
-      style={[styles.paginationButton, currentPage === 1 && styles.disabledButton]}
-    >
-      <ThemedText style={styles.paginationButtonText}>Previous</ThemedText>
-    </TouchableOpacity>
+export const PaginationControls = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: PaginationControlsProps): JSX.Element => {
+  const scheme = useColorScheme() as 'light' | 'dark';
+  const theme = Colors[scheme];
 
-    <ThemedView style={styles.paginationInfo}>
-      <ThemedText style={styles.paginationLabel}>
-        Page {currentPage} of {totalPages}
-      </ThemedText>
+  return (
+    <ThemedView style={styles.paginationContainer}>
+      <TouchableOpacity
+        onPress={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+        style={[
+          styles.paginationButton,
+          { backgroundColor: theme.tint },
+          currentPage === 1 && { backgroundColor: theme.border },
+        ]}
+      >
+        <ThemedText style={[
+          styles.paginationButtonText,
+          currentPage === 1 && { color: theme.secondaryText },
+        ]}>
+          Previous
+        </ThemedText>
+      </TouchableOpacity>
+
+      <View style={styles.paginationInfo}>
+        <ThemedText style={[styles.paginationLabel, { color: theme.text }]}>
+          Page {currentPage} of {totalPages}
+        </ThemedText>
+      </View>
+
+      <TouchableOpacity
+        onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+        style={[
+          styles.paginationButton,
+          { backgroundColor: theme.tint },
+          currentPage === totalPages && { backgroundColor: theme.border },
+        ]}
+      >
+        <ThemedText style={[
+          styles.paginationButtonText,
+          currentPage === totalPages && { color: theme.secondaryText },
+        ]}>
+          Next
+        </ThemedText>
+      </TouchableOpacity>
     </ThemedView>
-
-    <TouchableOpacity
-      onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-      disabled={currentPage === totalPages}
-      style={[styles.paginationButton, currentPage === totalPages && styles.disabledButton]}
-    >
-      <ThemedText style={styles.paginationButtonText}>Next</ThemedText>
-    </TouchableOpacity>
-  </ThemedView>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -169,6 +207,7 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     padding: 4,
+    borderRadius: 12,
   },
   basicInfo: {
     flexDirection: 'column',
@@ -180,14 +219,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rarity: {
-    color: '#FFD700',
+    fontSize: 16,
   },
   level: {
     fontSize: 14,
   },
   setName: {
     fontSize: 14,
-    color: '#4a90e2',
     marginTop: 2,
   },
   statsPreview: {
@@ -196,10 +234,8 @@ const styles = StyleSheet.create({
   },
   dateAdded: {
     fontSize: 12,
-    color: '#808080',
     marginTop: 2,
   },
-  // Pagination styles
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -208,14 +244,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   paginationButton: {
-    backgroundColor: '#007BFF',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
   },
-  disabledButton: {
-    backgroundColor: '#CCCCCC',
-  },
+  disabledButton: {},
   paginationButtonText: {
     color: 'white',
     fontWeight: 'bold',

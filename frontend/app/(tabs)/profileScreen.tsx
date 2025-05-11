@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Image, Button, ActivityIndicator, View, Alert, ScrollView } from 'react-native';
+import { StyleSheet,  Button, ActivityIndicator, View, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfig } from '@/contexts/ConfigContext';
@@ -8,9 +8,11 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { RelicCard, PaginationControls, setOnPressFavorite } from '@/components/relics/RelicComponents';
+import { RelicCard, PaginationControls as RelicPaginationControls, setOnPressFavorite as setOnPressRelicFavorite } from '@/components/relics/RelicComponents';
+import { CharacterCard, PaginationControls as CharacterPaginationControls, setOnPressFavorite as setOnPressCharacterFavorite, UserCharacter, CharacterDetails } from '@/components/characters/CharacterComponents';
 import RelicDetailsModal from '@/components/relics/RelicDetailsModal';
-import { useRouter } from 'expo-router'; 
+import CharacterDetailsModal from '@/components/characters/CharacterDetailsModal';
+import { useRouter } from 'expo-router';
 
 interface User {
   id?: string;
@@ -26,7 +28,7 @@ interface AuthContextType {
   loading: boolean;
   getProfile: () => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile?: (profileData: Partial<User>) => Promise<boolean>; // Add updateProfile to the interface
+  updateProfile?: (profileData: Partial<User>) => Promise<boolean>;
 }
 
 // Define interfaces for relic data structures
@@ -44,7 +46,6 @@ interface UserRelic {
   level: number;
   isFavorite: boolean;
   dateAdded: string;
-  // Additional fields from the full relic
   setName?: string;
   description?: string;
   imageUrl?: string;
@@ -70,7 +71,10 @@ export default function ProfileScreen(): JSX.Element {
   const { apiUrl } = useConfig();
   const colorScheme = useColorScheme();
   const themeColors = Colors[colorScheme];
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
+
+  // Tab state to switch between relics and characters
+  const [activeTab, setActiveTab] = useState<'relics' | 'characters'>('relics');
 
   // Relic state variables
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
@@ -78,28 +82,45 @@ export default function ProfileScreen(): JSX.Element {
   const [relicError, setRelicError] = useState<string | null>(null);
   const [selectedUserRelic, setSelectedUserRelic] = useState<UserRelic | null>(null);
   const [selectedRelicDetails, setSelectedRelicDetails] = useState<RelicDetails | null>(null);
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [relicModalVisible, setRelicModalVisible] = useState<boolean>(false);
   const [updatingRelic, setUpdatingRelic] = useState<boolean>(false);
   const [removingRelic, setRemovingRelic] = useState<boolean>(false);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false); // Add refresh state
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const itemsPerPage = 3;
+  // Character state variables
+  const [userCharacters, setUserCharacters] = useState<UserCharacter[]>([]);
+  const [isLoadingCharacters, setIsLoadingCharacters] = useState<boolean>(true);
+  const [characterError, setCharacterError] = useState<string | null>(null);
+  const [selectedUserCharacter, setSelectedUserCharacter] = useState<UserCharacter | null>(null);
+  const [selectedCharacterDetails, setSelectedCharacterDetails] = useState<CharacterDetails | null>(null);
+  const [characterModalVisible, setCharacterModalVisible] = useState<boolean>(false);
+  const [updatingCharacter, setUpdatingCharacter] = useState<boolean>(false);
+  const [removingCharacter, setRemovingCharacter] = useState<boolean>(false);
+
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  // Pagination state for relics
+  const [relicCurrentPage, setRelicCurrentPage] = useState<number>(1);
+  const [relicTotalPages, setRelicTotalPages] = useState<number>(1);
+  const relicsPerPage = 3;
+
+  // Pagination state for characters
+  const [characterCurrentPage, setCharacterCurrentPage] = useState<number>(1);
+  const [characterTotalPages, setCharacterTotalPages] = useState<number>(1);
+  const charactersPerPage = 3;
 
   // Navigate to edit profile screen
   const navigateToEditProfile = () => {
     router.push('../editProfileScreen');
   };
 
-  // Refresh profile and relics data
+  // Refresh profile and collections data
   const refreshProfileData = async () => {
     setIsRefreshing(true);
     try {
       await getProfile();
       if (user && user.id) {
         await fetchUserRelics();
+        await fetchUserCharacters();
       }
     } catch (error) {
       console.error('Failed to refresh profile data:', error);
@@ -128,6 +149,7 @@ export default function ProfileScreen(): JSX.Element {
     }).format(formattedDate);
   };
 
+  // RELICS SECTION
   const fetchUserRelics = useCallback(async (): Promise<void> => {
     if (!user || !user.id) {
       setRelicError("User not authenticated. Please log in.");
@@ -171,8 +193,8 @@ export default function ProfileScreen(): JSX.Element {
 
       setUserRelics(relicsWithDetails);
       // Calculate total pages
-      setTotalPages(Math.ceil(relicsWithDetails.length / itemsPerPage));
-      setCurrentPage(1); // Reset to first page when data is loaded
+      setRelicTotalPages(Math.ceil(relicsWithDetails.length / relicsPerPage));
+      setRelicCurrentPage(1); // Reset to first page when data is loaded
       setIsLoadingRelics(false);
     } catch (error) {
       console.error('Fetch error:', error);
@@ -180,12 +202,6 @@ export default function ProfileScreen(): JSX.Element {
       setIsLoadingRelics(false);
     }
   }, [apiUrl, user]);
-
-  useEffect(() => {
-    if (user && user.id) {
-      fetchUserRelics();
-    }
-  }, [fetchUserRelics, user]);
 
   const fetchRelicDetails = async (relicId: string, userRelic: UserRelic): Promise<void> => {
     try {
@@ -195,7 +211,7 @@ export default function ProfileScreen(): JSX.Element {
       });
       setSelectedRelicDetails(response.data);
       setSelectedUserRelic(userRelic);
-      setModalVisible(true);
+      setRelicModalVisible(true);
     } catch (error) {
       console.error('Fetch relic details error:', error);
       setRelicError('Failed to fetch relic details. Please try again later.');
@@ -250,7 +266,7 @@ export default function ProfileScreen(): JSX.Element {
       // Update the local state to remove the deleted relic
       setUserRelics(prev => prev.filter(relic => relic._id !== relicId));
 
-      setModalVisible(false); // Close the modal after removing
+      setRelicModalVisible(false); // Close the modal after removing
       Alert.alert('Success', 'Relic has been removed from your collection.');
       setRemovingRelic(false);
     } catch (error) {
@@ -260,33 +276,193 @@ export default function ProfileScreen(): JSX.Element {
     }
   };
 
-  // Handle page change
-  const handlePageChange = (page: number): void => {
-    setCurrentPage(page);
+  // Handle relic page change
+  const handleRelicPageChange = (page: number): void => {
+    setRelicCurrentPage(page);
   };
 
-  // Toggle favorite status
-  const toggleFavorite = (id: string, currentStatus: boolean): void => {
+  // Toggle relic favorite status
+  const toggleRelicFavorite = (id: string, currentStatus: boolean): void => {
     updateUserRelic(id, { isFavorite: !currentStatus });
   };
 
-  useEffect(() => {
-    setOnPressFavorite(toggleFavorite);
-  }, []);
-
-  // Get current page items
-  const getCurrentPageItems = (): UserRelic[] => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+  // Get current page relic items
+  const getCurrentPageRelics = (): UserRelic[] => {
+    const startIndex = (relicCurrentPage - 1) * relicsPerPage;
+    const endIndex = startIndex + relicsPerPage;
     return userRelics.slice(startIndex, endIndex);
   };
 
-  const EmptyCollection = (): JSX.Element => (
+  // CHARACTERS SECTION
+  const fetchUserCharacters = useCallback(async (): Promise<void> => {
+    if (!user || !user.id) {
+      setCharacterError("User not authenticated. Please log in.");
+      setIsLoadingCharacters(false);
+      return;
+    }
+
+    try {
+      setIsLoadingCharacters(true);
+      // Fetch user's characters collection
+      const response = await axios.get<UserCharacter[]>(`${apiUrl}/users/getUserCharacters/${user.id}`, {
+        timeout: 5000,
+      });
+
+      // For each user character, fetch the complete character details and merge them
+      const charactersWithDetails = await Promise.all(
+        response.data.map(async (userCharacter) => {
+          try {
+            const detailsResponse = await axios.get<CharacterDetails>(
+              `${apiUrl}/db/getCharacters/${userCharacter.characterId}`,
+              { timeout: 3000 }
+            );
+            console.log(user)
+
+            // Merge user character data with full character details
+            return {
+              ...userCharacter,
+              name: detailsResponse.data.name || "Unknown Character",
+              element: detailsResponse.data.element,
+              weaponType: detailsResponse.data.weaponType,
+              description: detailsResponse.data.description,
+              imageUrl: detailsResponse.data.imageUrl,
+              stats: detailsResponse.data.stats,
+              // Ensure we keep user-specific properties
+              rarity: detailsResponse.data.rarity || userCharacter.rarity,
+            };
+          } catch (error) {
+            console.warn(`Failed to fetch details for character ${userCharacter.characterId}:`, error);
+            // Return original userCharacter if we can't get details
+            return userCharacter;
+          }
+        })
+      );
+
+      setUserCharacters(charactersWithDetails);
+      // Calculate total pages
+      setCharacterTotalPages(Math.ceil(charactersWithDetails.length / charactersPerPage));
+      setCharacterCurrentPage(1); // Reset to first page when data is loaded
+      setIsLoadingCharacters(false);
+    } catch (error) {
+      console.error('Fetch characters error:', error);
+      setCharacterError('Failed to fetch your characters. Please try again later.');
+      setIsLoadingCharacters(false);
+    }
+  }, [apiUrl, user]);
+
+  const fetchCharacterDetails = async (characterId: string, userCharacter: UserCharacter): Promise<void> => {
+    try {
+      // We already have basic info in userCharacter, but fetch complete details for the modal
+      const response = await axios.get<CharacterDetails>(
+        `${apiUrl}/db/getCharacters/${characterId}`,
+        { timeout: 5000 }
+      );
+      setSelectedCharacterDetails(response.data);
+      setSelectedUserCharacter(userCharacter);
+      setCharacterModalVisible(true);
+    } catch (error) {
+      console.error('Fetch character details error:', error);
+      setCharacterError('Failed to fetch character details. Please try again later.');
+    }
+  };
+
+  // Update character in user's collection
+  const updateUserCharacter = async (id: string, updates: Partial<UserCharacter>): Promise<void> => {
+    if (!user || !user.id) {
+      Alert.alert('Authentication Required', 'Please log in to update characters in your collection.');
+      return;
+    }
+
+    try {
+      setUpdatingCharacter(true);
+
+      await axios.put(`${apiUrl}/users/updateUserCharacter/${id}`, {
+        userId: user.id,
+        ...updates
+      }, {
+        timeout: 5000
+      });
+
+      // Update the local state to reflect changes
+      setUserCharacters(prev => prev.map(character =>
+        character._id === id ? { ...character, ...updates } : character
+      ));
+
+      Alert.alert('Success', 'Character has been updated in your collection!');
+      setUpdatingCharacter(false);
+    } catch (error) {
+      console.error('Update character error:', error);
+      Alert.alert('Error', 'Failed to update character in your collection. Please try again later.');
+      setUpdatingCharacter(false);
+    }
+  };
+
+  // Remove character from user's collection
+  const removeUserCharacter = async (characterId: string): Promise<void> => {
+    if (!user || !user.id) {
+      Alert.alert('Authentication Required', 'Please log in to remove characters from your collection.');
+      return;
+    }
+
+    try {
+      setRemovingCharacter(true);
+
+      await axios.delete(`${apiUrl}/users/removeCharacterFromCollection/${user.id}/${characterId}`, {
+        timeout: 5000
+      });
+
+      // Update the local state to remove the deleted character
+      setUserCharacters(prev => prev.filter(character => character._id !== characterId));
+
+      setCharacterModalVisible(false); // Close the modal after removing
+      Alert.alert('Success', 'Character has been removed from your collection.');
+      setRemovingCharacter(false);
+    } catch (error) {
+      console.error('Remove character error:', error);
+      Alert.alert('Error', 'Failed to remove character from your collection. Please try again later.');
+      setRemovingCharacter(false);
+    }
+  };
+
+  // Handle character page change
+  const handleCharacterPageChange = (page: number): void => {
+    setCharacterCurrentPage(page);
+  };
+
+  // Toggle character favorite status
+  const toggleCharacterFavorite = (id: string, currentStatus: boolean): void => {
+    updateUserCharacter(id, { isFavorite: !currentStatus });
+  };
+
+  // Get current page character items
+  const getCurrentPageCharacters = (): UserCharacter[] => {
+    const startIndex = (characterCurrentPage - 1) * charactersPerPage;
+    const endIndex = startIndex + charactersPerPage;
+    return userCharacters.slice(startIndex, endIndex);
+  };
+
+  // Set up favorite handlers when component mounts
+  useEffect(() => {
+    setOnPressRelicFavorite(toggleRelicFavorite);
+    setOnPressCharacterFavorite(toggleCharacterFavorite);
+  }, []);
+
+  // Fetch data when user is loaded
+  useEffect(() => {
+    if (user && user.id) {
+      fetchUserRelics();
+      fetchUserCharacters();
+    }
+  }, [fetchUserRelics, fetchUserCharacters, user]);
+
+  const EmptyCollection = ({ type }: { type: 'relics' | 'characters' }): JSX.Element => (
     <ThemedView style={styles.emptyContainer}>
       <IconSymbol name="box-open" size={60} color="#808080" />
-      <ThemedText style={styles.emptyText}>Your relic collection is empty</ThemedText>
+      <ThemedText style={styles.emptyText}>
+        Your {type} collection is empty
+      </ThemedText>
       <ThemedText style={styles.emptySubtext}>
-        Visit the Relics screen to add some relics to your collection
+        Visit the {type === 'relics' ? 'Relics' : 'Characters'} screen to add some {type} to your collection
       </ThemedText>
     </ThemedView>
   );
@@ -337,7 +513,6 @@ export default function ProfileScreen(): JSX.Element {
         </View>
 
         <View style={styles.buttonContainer}>
-          {/* Updated to use router navigation */}
           <Button 
             title="Edit Profile" 
             onPress={navigateToEditProfile} 
@@ -345,49 +520,115 @@ export default function ProfileScreen(): JSX.Element {
           />
         </View>
 
-        {/* Relics Section */}
-        <ThemedView style={styles.relicsSection}>
-          <ThemedView style={styles.sectionHeader}>
-            <ThemedText type="title">My Relic Collection</ThemedText>
-            <Button 
-              title="Refresh" 
-              onPress={fetchUserRelics} 
-              color={Colors.primary}
-            />
+        {/* Collection Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'relics' && styles.activeTabButton]} 
+            onPress={() => setActiveTab('relics')}
+          >
+            <ThemedText style={[styles.tabText, activeTab === 'relics' && styles.activeTabText]}>
+              Relics
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'characters' && styles.activeTabButton]} 
+            onPress={() => setActiveTab('characters')}
+          >
+            <ThemedText style={[styles.tabText, activeTab === 'characters' && styles.activeTabText]}>
+              Characters
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+
+        {/* Relics Collection */}
+        {activeTab === 'relics' && (
+          <ThemedView style={styles.collectionSection}>
+            <ThemedView style={styles.sectionHeader}>
+              <Button 
+                title="Refresh Relics" 
+                onPress={fetchUserRelics} 
+                color={Colors.primary}
+              />
+            </ThemedView>
+
+            {isLoadingRelics ? (
+              <ThemedView style={styles.centerContent}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <ThemedText style={styles.loadingText}>Loading your relics...</ThemedText>
+              </ThemedView>
+            ) : relicError ? (
+              <ThemedView style={styles.centerContent}>
+                <ThemedText style={styles.errorText}>{relicError}</ThemedText>
+              </ThemedView>
+            ) : userRelics.length === 0 ? (
+              <EmptyCollection type="relics" />
+            ) : (
+              <ThemedView style={styles.collectionContainer}>
+                {getCurrentPageRelics().map((relic) => (
+                  <RelicCard
+                    key={relic._id}
+                    relic={relic}
+                    onPress={() => fetchRelicDetails(relic.relicId, relic)}
+                  />
+                ))}
+
+                {/* Pagination controls */}
+                {userRelics.length > relicsPerPage && (
+                  <RelicPaginationControls
+                    currentPage={relicCurrentPage}
+                    totalPages={relicTotalPages}
+                    onPageChange={handleRelicPageChange}
+                  />
+                )}
+              </ThemedView>
+            )}
           </ThemedView>
+        )}
 
-          {isLoadingRelics ? (
-            <ThemedView style={styles.centerContent}>
-              <ActivityIndicator size="large" color={Colors.primary} />
-              <ThemedText style={styles.loadingText}>Loading your relics...</ThemedText>
+        {/* Characters Collection */}
+        {activeTab === 'characters' && (
+          <ThemedView style={styles.collectionSection}>
+            <ThemedView style={styles.sectionHeader}>
+              <Button 
+                title="Refresh Characters" 
+                onPress={fetchUserCharacters} 
+                color={Colors.primary}
+              />
             </ThemedView>
-          ) : relicError ? (
-            <ThemedView style={styles.centerContent}>
-              <ThemedText style={styles.errorText}>{relicError}</ThemedText>
-            </ThemedView>
-          ) : userRelics.length === 0 ? (
-            <EmptyCollection />
-          ) : (
-            <ThemedView style={styles.relicsContainer}>
-              {getCurrentPageItems().map((relic) => (
-                <RelicCard
-                  key={relic._id}
-                  relic={relic}
-                  onPress={() => fetchRelicDetails(relic.relicId, relic)}
-                />
-              ))}
 
-              {/* Pagination controls */}
-              {userRelics.length > itemsPerPage && (
-                <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
-              )}
-            </ThemedView>
-          )}
-        </ThemedView>
+            {isLoadingCharacters ? (
+              <ThemedView style={styles.centerContent}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <ThemedText style={styles.loadingText}>Loading your characters...</ThemedText>
+              </ThemedView>
+            ) : characterError ? (
+              <ThemedView style={styles.centerContent}>
+                <ThemedText style={styles.errorText}>{characterError}</ThemedText>
+              </ThemedView>
+            ) : userCharacters.length === 0 ? (
+              <EmptyCollection type="characters" />
+            ) : (
+              <ThemedView style={styles.collectionContainer}>
+                {getCurrentPageCharacters().map((character) => (
+                  <CharacterCard
+                    key={character._id}
+                    character={character}
+                    onPress={() => fetchCharacterDetails(character.characterId, character)}
+                  />
+                ))}
+
+                {/* Pagination controls */}
+                {userCharacters.length > charactersPerPage && (
+                  <CharacterPaginationControls
+                    currentPage={characterCurrentPage}
+                    totalPages={characterTotalPages}
+                    onPageChange={handleCharacterPageChange}
+                  />
+                )}
+              </ThemedView>
+            )}
+          </ThemedView>
+        )}
 
         <View style={styles.actionButtonsContainer}>
           <Button 
@@ -409,10 +650,20 @@ export default function ProfileScreen(): JSX.Element {
         <RelicDetailsModal
           relic={selectedRelicDetails}
           userRelic={selectedUserRelic}
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
+          visible={relicModalVisible}
+          onClose={() => setRelicModalVisible(false)}
           onUpdateRelic={updateUserRelic}
           onRemoveRelic={removeUserRelic}
+        />
+
+        {/* Character Details Modal */}
+        <CharacterDetailsModal
+          character={selectedCharacterDetails}
+          userCharacter={selectedUserCharacter}
+          visible={characterModalVisible}
+          onClose={() => setCharacterModalVisible(false)}
+          onUpdateCharacter={updateUserCharacter}
+          onRemoveCharacter={removeUserCharacter}
         />
       </ThemedView>
     </ScrollView>
@@ -452,7 +703,29 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginBottom: 24,
   },
-  relicsSection: {
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: '#e0e0e0',
+  },
+  activeTabButton: {
+    borderBottomColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  activeTabText: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  collectionSection: {
     marginBottom: 24,
   },
   sectionHeader: {
@@ -461,7 +734,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  relicsContainer: {
+  collectionContainer: {
     gap: 16,
   },
   centerContent: {
