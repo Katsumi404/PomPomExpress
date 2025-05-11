@@ -18,6 +18,17 @@ const MAPPING = {
   'settings': 'settings',
   'star.fill': 'star', 
   'star': 'star-border',
+  
+  // Element icons
+  'circle': 'circle',
+  'flame': 'local-fire-department',
+  'droplet': 'water-drop',
+  'wind': 'air',
+  'zap': 'bolt',
+  'leaf': 'eco',
+  'snowflake': 'ac-unit',
+  'mountain': 'landscape',
+  'atom': 'science',
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],
@@ -47,10 +58,8 @@ export function IconSymbol({
   // Platform-specific icon names
   const iconName =
     Platform.OS === 'ios'
-      ? name === 'star.fill'
-        ? 'star.fill' // Use the filled star for iOS
-        : 'star' // Use the unfilled star for iOS
-      : MAPPING[name] || 'star'; // Default to MaterialIcons for Android/Web
+      ? name
+      : MAPPING[name] || 'circle'; // Default to circle for Android/Web if mapping not found
 
   return <MaterialIcons color={color} size={size} name={iconName} style={style} />;
 }

@@ -9,13 +9,217 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
-import { useConfig } from'@/contexts/ConfigContext'; 
+import { useConfig } from '@/contexts/ConfigContext';
+import { PaginationControls } from '@/components/characters/CharacterComponents';
+import { getElementColor, getElementDisplay } from '@/constants/ElementColors';
+
+// Character Types
+export interface Character {
+  _id: string;
+  name: string;
+  element?: string;
+  path?: string;
+  rarity: number;
+  voiceActor?: string;
+  description?: string;
+  imageUrl?: string;
+  abilities?: string[];
+  baseStats?: { [key: string]: number | string };
+  tags?: string[];
+  releaseDate?: string;
+}
+
+// Character Card component for this screen
+const BrowserCard: React.FC<{
+  character: Character;
+  onPress: () => void;
+}> = ({ character, onPress }) => {
+  const elementDisplay = character.element ? getElementDisplay(character.element) : null;
+
+  return (
+    <TouchableOpacity onPress={onPress}>
+      <ThemedView style={styles.card}>
+        <ThemedText type="title" style={styles.characterName}>
+          {character.name}
+        </ThemedText>
+        <ThemedView style={styles.basicInfo}>
+          {character.element && (
+            <View style={styles.elementContainer}>
+              {elementDisplay && (
+                <IconSymbol
+                  name={elementDisplay.icon || 'circle'}
+                  size={16}
+                  color={getElementColor(character.element, '#FFFFFF')}
+                  style={styles.elementIcon}
+                />
+              )}
+              <ThemedText 
+                style={[
+                  styles.element, 
+                  { color: character.element ? getElementColor(character.element, undefined) : undefined }
+                ]}
+              >
+                {character.element}
+              </ThemedText>
+              <ThemedText style={styles.element}> • {character.path}</ThemedText>
+            </View>
+          )}
+          <ThemedText style={styles.rarity}>
+            {"★".repeat(character.rarity)}
+          </ThemedText>
+        </ThemedView>
+      </ThemedView>
+    </TouchableOpacity>
+  );
+};
+
+// Character Details Modal Component
+const CharacterDetailsModal: React.FC<{
+  character: Character | null;
+  visible: boolean;
+  onClose: () => void;
+  onAddToCollection: () => void;
+  addingToCollection: boolean;
+}> = ({ character, visible, onClose, onAddToCollection, addingToCollection }) => {
+  if (!character) return null;
+  
+  const elementDisplay = character.element ? getElementDisplay(character.element) : null;
+  
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <ThemedView style={styles.modalOverlay}>
+        <ThemedView style={styles.modalContent}>
+          <ScrollView>
+            <ThemedText type="title" style={styles.modalTitle}>
+              {character.name}
+            </ThemedText>
+            
+            {character.imageUrl ? (
+              <View style={styles.imageContainer}>
+                <Image 
+                  source={{ uri: character.imageUrl }} 
+                  style={styles.characterImage} 
+                  resizeMode="contain"
+                />
+              </View>
+            ) : null}
+            
+            <ThemedView style={styles.detailsContainer}>
+              {character.element && (
+                <ThemedView style={styles.detailRow}>
+                  <ThemedText type="defaultSemiBold">Element:</ThemedText>
+                  <View style={styles.elementDetailContainer}>
+                    {elementDisplay && (
+                      <IconSymbol
+                        name={elementDisplay.icon || 'circle'}
+                        size={16}
+                        color={getElementColor(character.element, '#FFFFFF')}
+                        style={styles.elementIcon}
+                      />
+                    )}
+                    <ThemedText style={{ color: getElementColor(character.element, undefined) }}>
+                      {character.element}
+                    </ThemedText>
+                  </View>
+                </ThemedView>
+              )}
+              
+              <ThemedView style={styles.detailRow}>
+                <ThemedText type="defaultSemiBold">Path:</ThemedText>
+                <ThemedText>{character.path}</ThemedText>
+              </ThemedView>
+              
+              <ThemedView style={styles.detailRow}>
+                <ThemedText type="defaultSemiBold">Rarity:</ThemedText>
+                <ThemedText style={styles.rarity}>{"★".repeat(character.rarity)}</ThemedText>
+              </ThemedView>
+              
+              {character.voiceActor ? (
+                <ThemedView style={styles.detailRow}>
+                  <ThemedText type="defaultSemiBold">Voice Actor:</ThemedText>
+                  <ThemedText>{character.voiceActor}</ThemedText>
+                </ThemedView>
+              ) : null}
+              
+              {character.description ? (
+                <ThemedView style={styles.descriptionContainer}>
+                  <ThemedText type="defaultSemiBold">Description:</ThemedText>
+                  <ThemedText style={styles.description}>{character.description}</ThemedText>
+                </ThemedView>
+              ) : null}
+              
+              {character.abilities && character.abilities.length > 0 ? (
+                <Collapsible title="Abilities">
+                  <ThemedView style={styles.collapsibleContent}>
+                    {character.abilities.map((ability, index) => (
+                      <ThemedText key={index}>• {ability}</ThemedText>
+                    ))}
+                  </ThemedView>
+                </Collapsible>
+              ) : null}
+              
+              {character.baseStats && Object.keys(character.baseStats).length > 0 ? (
+                <Collapsible title="Base Stats">
+                  <ThemedView style={styles.collapsibleContent}>
+                    {Object.entries(character.baseStats).map(([stat, value]) => (
+                      <ThemedText key={stat}>• {stat}: {value}</ThemedText>
+                    ))}
+                  </ThemedView>
+                </Collapsible>
+              ) : null}
+              
+              {character.tags && character.tags.length > 0 ? (
+                <ThemedView style={styles.tagsContainer}>
+                  <ThemedText type="defaultSemiBold">Tags:</ThemedText>
+                  <ThemedView style={styles.tags}>
+                    {character.tags.map((tag, index) => (
+                      <ThemedView key={index} style={styles.tag}>
+                        <ThemedText style={styles.tagText}>{tag}</ThemedText>
+                      </ThemedView>
+                    ))}
+                  </ThemedView>
+                </ThemedView>
+              ) : null}
+              
+              {character.releaseDate ? (
+                <ThemedView style={styles.detailRow}>
+                  <ThemedText type="defaultSemiBold">Release Date:</ThemedText>
+                  <ThemedText>{new Date(character.releaseDate).toLocaleDateString()}</ThemedText>
+                </ThemedView>
+              ) : null}
+            </ThemedView>
+            
+            {/* Add to Collection Button */}
+            <TouchableOpacity 
+              style={styles.addToCollectionButton}
+              onPress={onAddToCollection}
+              disabled={addingToCollection}
+            >
+              <ThemedText style={styles.buttonText}>
+                {addingToCollection ? 'Adding...' : 'Add to My Collection'}
+              </ThemedText>
+            </TouchableOpacity>
+          </ScrollView>
+          
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <ThemedText style={styles.closeButtonText}>Close</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+      </ThemedView>
+    </Modal>
+  );
+};
 
 export default function CharactersScreen() {
-  const [characters, setCharacters] = useState([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedCharacter, setSelectedCharacter] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [addingToCollection, setAddingToCollection] = useState(false);
   
@@ -46,7 +250,7 @@ export default function CharactersScreen() {
     fetchCharacters();
   }, []);
 
-  const fetchCharacterDetails = async (id) => {
+  const fetchCharacterDetails = async (id: string) => {
     try {
       const response = await axios.get(`${apiUrl}/db/getCharacters/${id}`, {
         timeout: 5000,
@@ -64,6 +268,8 @@ export default function CharactersScreen() {
       Alert.alert('Authentication Required', 'Please log in to add characters to your collection.');
       return;
     }
+    
+    if (!selectedCharacter) return;
     
     try {
       setAddingToCollection(true);
@@ -91,148 +297,15 @@ export default function CharactersScreen() {
     }
   };
 
-  const CharacterCard = ({ character }) => (
-    <TouchableOpacity onPress={() => fetchCharacterDetails(character._id)}>
-      <ThemedView style={styles.card}>
-        <ThemedText type="title" style={styles.characterName}>
-          {character.name}
-        </ThemedText>
-        <ThemedView style={styles.basicInfo}>
-          <ThemedText style={styles.element}>
-            {character.element} • {character.path}
-          </ThemedText>
-          <ThemedText style={styles.rarity}>
-            {"★".repeat(character.rarity)}
-          </ThemedText>
-        </ThemedView>
-      </ThemedView>
-    </TouchableOpacity>
-  );
-
-  const CharacterDetailsModal = ({ character, visible, onClose }) => {
-    if (!character) return null;
-    
-    return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={visible}
-        onRequestClose={onClose}
-      >
-        <ThemedView style={styles.modalOverlay}>
-          <ThemedView style={styles.modalContent}>
-            <ScrollView>
-              <ThemedText type="title" style={styles.modalTitle}>
-                {character.name}
-              </ThemedText>
-              
-              {character.imageUrl ? (
-                <View style={styles.imageContainer}>
-                  <Image 
-                    source={{ uri: character.imageUrl }} 
-                    style={styles.characterImage} 
-                    resizeMode="contain"
-                  />
-                </View>
-              ) : null}
-              
-              <ThemedView style={styles.detailsContainer}>
-                <ThemedView style={styles.detailRow}>
-                  <ThemedText type="defaultSemiBold">Element:</ThemedText>
-                  <ThemedText>{character.element}</ThemedText>
-                </ThemedView>
-                
-                <ThemedView style={styles.detailRow}>
-                  <ThemedText type="defaultSemiBold">Path:</ThemedText>
-                  <ThemedText>{character.path}</ThemedText>
-                </ThemedView>
-                
-                <ThemedView style={styles.detailRow}>
-                  <ThemedText type="defaultSemiBold">Rarity:</ThemedText>
-                  <ThemedText>{"★".repeat(character.rarity)}</ThemedText>
-                </ThemedView>
-                
-                {character.voiceActor ? (
-                  <ThemedView style={styles.detailRow}>
-                    <ThemedText type="defaultSemiBold">Voice Actor:</ThemedText>
-                    <ThemedText>{character.voiceActor}</ThemedText>
-                  </ThemedView>
-                ) : null}
-                
-                {character.description ? (
-                  <ThemedView style={styles.descriptionContainer}>
-                    <ThemedText type="defaultSemiBold">Description:</ThemedText>
-                    <ThemedText style={styles.description}>{character.description}</ThemedText>
-                  </ThemedView>
-                ) : null}
-                
-                {character.abilities && character.abilities.length > 0 ? (
-                  <Collapsible title="Abilities">
-                    <ThemedView style={styles.collapsibleContent}>
-                      {character.abilities.map((ability, index) => (
-                        <ThemedText key={index}>• {ability}</ThemedText>
-                      ))}
-                    </ThemedView>
-                  </Collapsible>
-                ) : null}
-                
-                {character.baseStats && Object.keys(character.baseStats).length > 0 ? (
-                  <Collapsible title="Base Stats">
-                    <ThemedView style={styles.collapsibleContent}>
-                      {Object.entries(character.baseStats).map(([stat, value]) => (
-                        <ThemedText key={stat}>• {stat}: {value}</ThemedText>
-                      ))}
-                    </ThemedView>
-                  </Collapsible>
-                ) : null}
-                
-                {character.tags && character.tags.length > 0 ? (
-                  <ThemedView style={styles.tagsContainer}>
-                    <ThemedText type="defaultSemiBold">Tags:</ThemedText>
-                    <ThemedView style={styles.tags}>
-                      {character.tags.map((tag, index) => (
-                        <ThemedView key={index} style={styles.tag}>
-                          <ThemedText style={styles.tagText}>{tag}</ThemedText>
-                        </ThemedView>
-                      ))}
-                    </ThemedView>
-                  </ThemedView>
-                ) : null}
-                
-                {character.releaseDate ? (
-                  <ThemedView style={styles.detailRow}>
-                    <ThemedText type="defaultSemiBold">Release Date:</ThemedText>
-                    <ThemedText>{new Date(character.releaseDate).toLocaleDateString()}</ThemedText>
-                  </ThemedView>
-                ) : null}
-              </ThemedView>
-              
-              {/* Add to Collection Button */}
-              <TouchableOpacity 
-                style={styles.addToCollectionButton}
-                onPress={addToUserCollection}
-                disabled={addingToCollection}
-              >
-                <ThemedText style={styles.buttonText}>
-                  {addingToCollection ? 'Adding...' : 'Add to My Collection'}
-                </ThemedText>
-              </TouchableOpacity>
-            </ScrollView>
-            
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <ThemedText style={styles.closeButtonText}>Close</ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
-        </ThemedView>
-      </Modal>
-    );
-  };
-
   // PAGINATION: Logic
   const totalPages = Math.ceil(characters.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentCharacters = characters.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <ParallaxScrollView
@@ -261,31 +334,19 @@ export default function CharactersScreen() {
           </ThemedView>
 
           {currentCharacters.map((character) => (
-            <CharacterCard key={character._id} character={character} />
+            <BrowserCard 
+              key={character._id} 
+              character={character} 
+              onPress={() => fetchCharacterDetails(character._id)} 
+            />
           ))}
 
-          {/* PAGINATION: Buttons */}
-          <ThemedView style={styles.paginationContainer}>
-            <TouchableOpacity
-              onPress={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              style={[styles.paginationButton, currentPage === 1 && styles.disabledButton]}
-            >
-              <ThemedText style={styles.paginationText}>Previous</ThemedText>
-            </TouchableOpacity>
-
-            <ThemedText style={styles.paginationLabel}>
-              Page {currentPage} of {totalPages}
-            </ThemedText>
-
-            <TouchableOpacity
-              onPress={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              style={[styles.paginationButton, currentPage === totalPages && styles.disabledButton]}
-            >
-              <ThemedText style={styles.paginationText}>Next</ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
+          {/* Use PaginationControls from CharacterComponents */}
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
         </ThemedView>
       )}
 
@@ -293,6 +354,8 @@ export default function CharactersScreen() {
         character={selectedCharacter}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        onAddToCollection={addToUserCollection}
+        addingToCollection={addingToCollection}
       />
     </ParallaxScrollView>
   );
@@ -338,8 +401,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  elementContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  elementDetailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   element: {
     fontSize: 14,
+  },
+  elementIcon: {
+    marginRight: 4,
   },
   rarity: {
     color: '#FFD700',
@@ -451,26 +525,5 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: 'white',
     fontWeight: 'bold',
-  },
-  paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  paginationButton: {
-    backgroundColor: '#007BFF',
-    padding: 10,
-    borderRadius: 8,
-  },
-  disabledButton: {
-    backgroundColor: '#888',
-  },
-  paginationText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  paginationLabel: {
-    fontWeight: 'bold',
-  },
+  }
 });

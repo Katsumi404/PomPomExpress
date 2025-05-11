@@ -31,7 +31,7 @@ interface CharacterDetailsModalProps {
   onClose: () => void;
   onUpdateCharacter: (id: string, updates: Partial<UserCharacter>) => Promise<void>;
   onRemoveCharacter: (characterId: string) => Promise<void>;
-  onToggleFavorite?: (id: string, currentStatus: boolean) => void; // Add this line
+  onToggleFavorite?: (id: string, currentStatus: boolean) => void;
 }
 
 const CharacterDetailsModal: React.FC<CharacterDetailsModalProps> = ({
@@ -139,13 +139,10 @@ const CharacterDetailsModal: React.FC<CharacterDetailsModalProps> = ({
     }
   };
 
-  // Helper function to get element icon based on element name
-  const getElementIcon = (element?: string): string => {
-    if (!element) return 'circle';
-    return getElementDisplay(element).icon;
-  };
-
   const getRarityStars = (rarity: number): string => '⭐'.repeat(rarity);
+
+  // Use the element display utility to get icon and color
+  const elementDisplay = character.element ? getElementDisplay(character.element) : null;
 
   return (
     <Modal
@@ -194,7 +191,7 @@ const CharacterDetailsModal: React.FC<CharacterDetailsModalProps> = ({
                     <ThemedText type="defaultSemiBold" style={{ color: theme.text }}>Element: </ThemedText>
                     <View style={styles.elementContainer}>
                       <IconSymbol
-                        name={getElementIcon(character.element)}
+                        name={elementDisplay?.icon || 'circle'}
                         size={16}
                         color={getElementColor(character.element, theme.text)}
                         style={styles.elementIcon}
@@ -413,9 +410,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  closeButton: {
-    padding: 4,
-  },
   scrollContent: {
     padding: 16,
     maxHeight: '70%',
@@ -543,6 +537,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e74c3c',
   },
   closeButton: {
+    padding: 4,
     backgroundColor: '#7f8c8d',
   },
   favouriteButton: {

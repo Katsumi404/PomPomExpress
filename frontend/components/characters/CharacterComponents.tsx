@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
-import { getElementColor } from '@/constants/ElementColors';
+import { getElementColor, getElementDisplay } from '@/constants/ElementColors';
 
 // Favorite handler
 let onPressFavorite: (id: string, currentStatus: boolean) => void = () => {};
@@ -50,6 +50,9 @@ export const CharacterCard: React.FC<{
     e.stopPropagation();
     onPressFavorite(character._id, character.isFavorite);
   };
+
+  // Use the element display utility to get icon and color
+  const elementDisplay = character.element ? getElementDisplay(character.element) : null;
 
   return (
     <TouchableOpacity onPress={onPress}>
@@ -120,12 +123,20 @@ export const CharacterCard: React.FC<{
                 <ThemedText type="default" style={{ color: theme.text }}>
                   Element:{' '}
                 </ThemedText>
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={{ color: getElementColor(character.element, theme.text) }}
-                >
-                  {character.element}
-                </ThemedText>
+                <View style={styles.elementContainer}>
+                  <IconSymbol
+                    name={elementDisplay?.icon || 'circle'}
+                    size={16}
+                    color={getElementColor(character.element, theme.text)}
+                    style={styles.elementIcon}
+                  />
+                  <ThemedText
+                    type="defaultSemiBold"
+                    style={{ color: getElementColor(character.element, theme.text) }}
+                  >
+                    {character.element}
+                  </ThemedText>
+                </View>
               </View>
             )}
 
@@ -181,7 +192,7 @@ export const PaginationControls: React.FC<{
             currentPage === 1 && { color: theme.secondaryText },
           ]}
         >
-          ← Prev
+          Prev
         </ThemedText>
       </TouchableOpacity>
 
@@ -204,7 +215,7 @@ export const PaginationControls: React.FC<{
             currentPage === totalPages && { color: theme.secondaryText },
           ]}
         >
-          Next →
+           Next 
         </ThemedText>
       </TouchableOpacity>
     </ThemedView>
@@ -252,6 +263,13 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  elementContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  elementIcon: {
+    marginRight: 4,
   },
   paginationContainer: {
     flexDirection: 'row',
