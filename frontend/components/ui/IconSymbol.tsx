@@ -3,12 +3,14 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SymbolWeight } from 'expo-symbols';
 import React from 'react';
-import { OpaqueColorValue, StyleProp, ViewStyle, Platform } from 'react-native';
+import {
+  OpaqueColorValue,
+  StyleProp,
+  TextStyle,
+  Platform,
+} from 'react-native';
 
-// Add your SFSymbol to MaterialIcons mappings here.
 const MAPPING = {
-  // See MaterialIcons here: https://icons.expo.fyi
-  // See SF Symbols in the SF Symbols app on Mac.
   'house.fill': 'home',
   'person.crop.circle.fill': 'person',
   'person.fill': 'person',
@@ -16,9 +18,9 @@ const MAPPING = {
   'sparkles': 'auto-fix-high',
   'plus.slash.minus': 'calculate',
   'settings': 'settings',
-  'star.fill': 'star', 
+  'star.fill': 'star',
   'star': 'star-border',
-  
+
   // Element icons
   'circle': 'circle',
   'flame': 'local-fire-department',
@@ -29,12 +31,7 @@ const MAPPING = {
   'snowflake': 'ac-unit',
   'mountain': 'landscape',
   'atom': 'science',
-} as Partial<
-  Record<
-    import('expo-symbols').SymbolViewProps['name'],
-    React.ComponentProps<typeof MaterialIcons>['name']
-  >
->;
+} as const;
 
 export type IconSymbolName = keyof typeof MAPPING;
 
@@ -52,14 +49,17 @@ export function IconSymbol({
   name: IconSymbolName;
   size?: number;
   color: string | OpaqueColorValue;
-  style?: StyleProp<ViewStyle>;
+  style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  // Platform-specific icon names
-  const iconName =
-    Platform.OS === 'ios'
-      ? name
-      : MAPPING[name] || 'circle'; // Default to circle for Android/Web if mapping not found
+  const iconName = MAPPING[name] ?? 'circle';
 
-  return <MaterialIcons color={color} size={size} name={iconName} style={style} />;
+  return (
+    <MaterialIcons
+      name={iconName}
+      size={size}
+      color={color}
+      style={style}
+    />
+  );
 }
