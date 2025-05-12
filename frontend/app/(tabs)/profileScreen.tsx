@@ -10,8 +10,10 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { RelicCard, PaginationControls as RelicPaginationControls, setOnPressFavorite as setOnPressRelicFavorite } from '@/components/relics/RelicComponents';
 import { CharacterCard, PaginationControls as CharacterPaginationControls, setOnPressFavorite as setOnPressCharacterFavorite, UserCharacter, CharacterDetails } from '@/components/characters/CharacterComponents';
+import { LightConeCard, PaginationControls as LightConePaginationControls, setOnPressFavorite as setOnPressLightConeFavorite, UserLightCone, LightCone } from '@/components/lightCones/LightConeComponents';
 import RelicDetailsModal from '@/components/relics/RelicDetailsModal';
 import CharacterDetailsModal from '@/components/characters/CharacterDetailsModal';
+import LightConeDetailsModal from '@/components/lightCones/LightConeDetailsModal';
 import { useRouter } from 'expo-router';
 
 interface User {
@@ -66,6 +68,21 @@ interface RelicDetails {
   updatedAt?: string | null;
 }
 
+// Define interfaces for light cone details
+interface LightConeDetails {
+  _id: string;
+  name: string;
+  path: string;
+  rarity: number;
+  imageUrl?: string;
+  description?: string;
+  stats?: Stats;
+  tags?: Array<{id: string, name: string}>;
+  releaseDate?: string;
+  schemaVersion?: string;
+  updatedAt?: string | null;
+}
+
 export default function ProfileScreen(): JSX.Element {
   const { user, loading, getProfile, logout } = useAuth() as AuthContextType;
   const { apiUrl } = useConfig();
@@ -73,8 +90,8 @@ export default function ProfileScreen(): JSX.Element {
   const themeColors = Colors[colorScheme];
   const router = useRouter();
 
-  // Tab state to switch between relics and characters
-  const [activeTab, setActiveTab] = useState<'relics' | 'characters'>('relics');
+  // Tab state to switch between collections
+  const [activeTab, setActiveTab] = useState<'relics' | 'characters' | 'lightCones'>('relics');
 
   // Relic state variables
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
@@ -96,6 +113,16 @@ export default function ProfileScreen(): JSX.Element {
   const [updatingCharacter, setUpdatingCharacter] = useState<boolean>(false);
   const [removingCharacter, setRemovingCharacter] = useState<boolean>(false);
 
+  // Light Cone state variables
+  const [userLightCones, setUserLightCones] = useState<UserLightCone[]>([]);
+  const [isLoadingLightCones, setIsLoadingLightCones] = useState<boolean>(true);
+  const [lightConeError, setLightConeError] = useState<string | null>(null);
+  const [selectedUserLightCone, setSelectedUserLightCone] = useState<UserLightCone | null>(null);
+  const [selectedLightConeDetails, setSelectedLightConeDetails] = useState<LightConeDetails | null>(null);
+  const [lightConeModalVisible, setLightConeModalVisible] = useState<boolean>(false);
+  const [updatingLightCone, setUpdatingLightCone] = useState<boolean>(false);
+  const [removingLightCone, setRemovingLightCone] = useState<boolean>(false);
+
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // Pagination state for relics
@@ -107,6 +134,11 @@ export default function ProfileScreen(): JSX.Element {
   const [characterCurrentPage, setCharacterCurrentPage] = useState<number>(1);
   const [characterTotalPages, setCharacterTotalPages] = useState<number>(1);
   const charactersPerPage = 3;
+
+  // Pagination state for light cones
+  const [lightConeCurrentPage, setLightConeCurrentPage] = useState<number>(1);
+  const [lightConeTotalPages, setLightConeTotalPages] = useState<number>(1);
+  const lightConesPerPage = 3;
 
   // Navigate to edit profile screen
   const navigateToEditProfile = () => {
@@ -121,6 +153,7 @@ export default function ProfileScreen(): JSX.Element {
       if (user && user.id) {
         await fetchUserRelics();
         await fetchUserCharacters();
+        await fetchUserLightCones();
       }
     } catch (error) {
       console.error('Failed to refresh profile data:', error);
@@ -316,7 +349,6 @@ export default function ProfileScreen(): JSX.Element {
               `${apiUrl}/db/getCharacters/${userCharacter.characterId}`,
               { timeout: 3000 }
             );
-            console.log(user)
 
             // Merge user character data with full character details
             return {
@@ -441,10 +473,157 @@ export default function ProfileScreen(): JSX.Element {
     return userCharacters.slice(startIndex, endIndex);
   };
 
+  // LIGHT CONES SECTION
+  const fetchUserLightCones = useCallback(async (): Promise<void> => {
+    if (!user || !user.id) {
+      setLightConeError("User not authenticated. Please log in.");
+      setIsLoadingLightCones(false);
+      return;
+    }
+
+    try {
+      setIsLoadingLightCones(true);
+      // Fetch user's light cones collection
+      const response = await axios.get<UserLightCone[]>(`${apiUrl}/users/getUserLightCones/${user.id}`, {
+        timeout: 5000,
+      });
+
+      // For each user light cone, fetch the complete light cone details and merge them
+      const lightConesWithDetails = await Promise.all(
+        response.data.map(async (userLightCone) => {
+          try {
+            const detailsResponse = await axios.get<LightConeDetails>(
+              `${apiUrl}/db/getLightCones/${userLightCone.lightConeId}`,
+              { timeout: 3000 }
+            );
+
+            // Merge user light cone data with full light cone details
+            return {
+              ...userLightCone,
+              name: detailsResponse.data.name || "Unknown Light Cone",
+              path: detailsResponse.data.path,
+              description: detailsResponse.data.description,
+              imageUrl: detailsResponse.data.imageUrl,
+              stats: detailsResponse.data.stats,
+              // Ensure we keep user-specific properties
+              rarity: detailsResponse.data.rarity || userLightCone.rarity,
+            };
+          } catch (error) {
+            console.warn(`Failed to fetch details for light cone ${userLightCone.lightConeId}:`, error);
+            // Return original userLightCone if we can't get details
+            return userLightCone;
+          }
+        })
+      );
+
+      setUserLightCones(lightConesWithDetails);
+      // Calculate total pages
+      setLightConeTotalPages(Math.ceil(lightConesWithDetails.length / lightConesPerPage));
+      setLightConeCurrentPage(1); // Reset to first page when data is loaded
+      setIsLoadingLightCones(false);
+    } catch (error) {
+      console.error('Fetch light cones error:', error);
+      setLightConeError('Failed to fetch your light cones. Please try again later.');
+      setIsLoadingLightCones(false);
+    }
+  }, [apiUrl, user]);
+
+  const fetchLightConeDetails = async (lightConeId: string, userLightCone: UserLightCone): Promise<void> => {
+    try {
+      // We already have basic info in userLightCone, but fetch complete details for the modal
+      const response = await axios.get<LightConeDetails>(
+        `${apiUrl}/db/getLightCones/${lightConeId}`,
+        { timeout: 5000 }
+      );
+      setSelectedLightConeDetails(response.data);
+      setSelectedUserLightCone(userLightCone);
+      setLightConeModalVisible(true);
+    } catch (error) {
+      console.error('Fetch light cone details error:', error);
+      setLightConeError('Failed to fetch light cone details. Please try again later.');
+    }
+  };
+
+  // Update light cone in user's collection
+  const updateUserLightCone = async (id: string, updates: Partial<UserLightCone>): Promise<void> => {
+    if (!user || !user.id) {
+      Alert.alert('Authentication Required', 'Please log in to update light cones in your collection.');
+      return;
+    }
+
+    try {
+      setUpdatingLightCone(true);
+
+      await axios.put(`${apiUrl}/users/updateUserLightCone/${id}`, {
+        userId: user.id,
+        ...updates
+      }, {
+        timeout: 5000
+      });
+
+      // Update the local state to reflect changes
+      setUserLightCones(prev => prev.map(lightCone =>
+        lightCone._id === id ? { ...lightCone, ...updates } : lightCone
+      ));
+
+      Alert.alert('Success', 'Light Cone has been updated in your collection!');
+      setUpdatingLightCone(false);
+    } catch (error) {
+      console.error('Update light cone error:', error);
+      Alert.alert('Error', 'Failed to update light cone in your collection. Please try again later.');
+      setUpdatingLightCone(false);
+    }
+  };
+
+  // Remove light cone from user's collection
+  const removeUserLightCone = async (lightConeId: string): Promise<void> => {
+    if (!user || !user.id) {
+      Alert.alert('Authentication Required', 'Please log in to remove light cones from your collection.');
+      return;
+    }
+
+    try {
+      setRemovingLightCone(true);
+
+      await axios.delete(`${apiUrl}/users/removeLightConeFromCollection/${user.id}/${lightConeId}`, {
+        timeout: 5000
+      });
+
+      // Update the local state to remove the deleted light cone
+      setUserLightCones(prev => prev.filter(lightCone => lightCone._id !== lightConeId));
+
+      setLightConeModalVisible(false); // Close the modal after removing
+      Alert.alert('Success', 'Light Cone has been removed from your collection.');
+      setRemovingLightCone(false);
+    } catch (error) {
+      console.error('Remove light cone error:', error);
+      Alert.alert('Error', 'Failed to remove light cone from your collection. Please try again later.');
+      setRemovingLightCone(false);
+    }
+  };
+
+  // Handle light cone page change
+  const handleLightConePageChange = (page: number): void => {
+    setLightConeCurrentPage(page);
+  };
+
+  // Toggle light cone favorite status
+  const toggleLightConeFavorite = (id: string, currentStatus: boolean): void => {
+    updateUserLightCone(id, { isFavorite: !currentStatus });
+  };
+
+  // Get current page light cone items
+  const getCurrentPageLightCones = (): UserLightCone[] => {
+    const startIndex = (lightConeCurrentPage - 1) * lightConesPerPage;
+    const endIndex = startIndex + lightConesPerPage;
+    return userLightCones.slice(startIndex, endIndex);
+  };
+
   // Set up favorite handlers when component mounts
   useEffect(() => {
     setOnPressRelicFavorite(toggleRelicFavorite);
     setOnPressCharacterFavorite(toggleCharacterFavorite);
+    setOnPressLightConeFavorite(toggleLightConeFavorite);
   }, []);
 
   // Fetch data when user is loaded
@@ -452,17 +631,18 @@ export default function ProfileScreen(): JSX.Element {
     if (user && user.id) {
       fetchUserRelics();
       fetchUserCharacters();
+      fetchUserLightCones();
     }
-  }, [fetchUserRelics, fetchUserCharacters, user]);
+  }, [fetchUserRelics, fetchUserCharacters, fetchUserLightCones, user]);
 
-  const EmptyCollection = ({ type }: { type: 'relics' | 'characters' }): JSX.Element => (
+  const EmptyCollection = ({ type }: { type: 'relics' | 'characters' | 'lightCones' }): JSX.Element => (
     <ThemedView style={styles.emptyContainer}>
       <IconSymbol name="box-open" size={60} color="#808080" />
       <ThemedText style={styles.emptyText}>
         Your {type} collection is empty
       </ThemedText>
       <ThemedText style={styles.emptySubtext}>
-        Visit the {type === 'relics' ? 'Relics' : 'Characters'} screen to add some {type} to your collection
+        Visit the {type === 'relics' ? 'Relics' : type === 'characters' ? 'Characters' : 'Light Cones'} screen to add some {type} to your collection
       </ThemedText>
     </ThemedView>
   );
@@ -536,6 +716,14 @@ export default function ProfileScreen(): JSX.Element {
           >
             <ThemedText style={[styles.tabText, activeTab === 'characters' && styles.activeTabText]}>
               Characters
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'lightCones' && styles.activeTabButton]} 
+            onPress={() => setActiveTab('lightCones')}
+          >
+            <ThemedText style={[styles.tabText, activeTab === 'lightCones' && styles.activeTabText]}>
+              Light Cones
             </ThemedText>
           </TouchableOpacity>
         </View>
@@ -630,6 +818,51 @@ export default function ProfileScreen(): JSX.Element {
           </ThemedView>
         )}
 
+        {/* Light Cones Collection */}
+        {activeTab === 'lightCones' && (
+          <ThemedView style={styles.collectionSection}>
+            <ThemedView style={styles.sectionHeader}>
+              <Button 
+                title="Refresh Light Cones" 
+                onPress={fetchUserLightCones} 
+                color={Colors.primary}
+              />
+            </ThemedView>
+
+            {isLoadingLightCones ? (
+              <ThemedView style={styles.centerContent}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <ThemedText style={styles.loadingText}>Loading your light cones...</ThemedText>
+              </ThemedView>
+            ) : lightConeError ? (
+              <ThemedView style={styles.centerContent}>
+                <ThemedText style={styles.errorText}>{lightConeError}</ThemedText>
+              </ThemedView>
+            ) : userLightCones.length === 0 ? (
+              <EmptyCollection type="lightCones" />
+            ) : (
+              <ThemedView style={styles.collectionContainer}>
+                {getCurrentPageLightCones().map((lightCone) => (
+                  <LightConeCard
+                    key={lightCone._id}
+                    lightCone={lightCone}
+                    onPress={() => fetchLightConeDetails(lightCone.lightConeId, lightCone)}
+                  />
+                ))}
+
+                {/* Pagination controls */}
+                {userLightCones.length > lightConesPerPage && (
+                  <LightConePaginationControls
+                    currentPage={lightConeCurrentPage}
+                    totalPages={lightConeTotalPages}
+                    onPageChange={handleLightConePageChange}
+                  />
+                )}
+              </ThemedView>
+            )}
+          </ThemedView>
+        )}
+
         <View style={styles.actionButtonsContainer}>
           <Button 
             title="Refresh Profile" 
@@ -664,6 +897,16 @@ export default function ProfileScreen(): JSX.Element {
           onClose={() => setCharacterModalVisible(false)}
           onUpdateCharacter={updateUserCharacter}
           onRemoveCharacter={removeUserCharacter}
+        />
+
+        {/* Light Cone Details Modal */}
+        <LightConeDetailsModal
+          lightCone={selectedLightConeDetails}
+          userLightCone={selectedUserLightCone}
+          visible={lightConeModalVisible}
+          onClose={() => setLightConeModalVisible(false)}
+          onUpdateLightCone={updateUserLightCone}
+          onRemoveLightCone={removeUserLightCone}
         />
       </ThemedView>
     </ScrollView>
