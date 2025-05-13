@@ -93,8 +93,10 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
-        email: user.email
+        firstName: user.firstName, 
+        lastName: user.lastName,  
+        email: user.email,
+        birthday: user.birthday
       }
     });
   } catch (error) {
