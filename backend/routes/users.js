@@ -39,7 +39,7 @@ const getUserCollections = async (userId) => {
       user,
       charactersCollection: client.db(dbName).collection('characters'),
       lightConesCollection: client.db(dbName).collection('lightcones'),
-      relicsCollection: client.db(dbName).collection('relics'), // Add relics collection
+      relicsCollection: client.db(dbName).collection('relics'), 
     };
   } catch (error) {
     throw error;

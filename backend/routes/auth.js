@@ -174,4 +174,28 @@ router.put('/updateProfile',
   }
 );
 
+// Route to delete a user by ID
+router.delete('/delete', async (req, res) => {
+  try {
+    const { email } = req.body;  // Get email from the request body
+
+    // Validate email
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required to delete user' });
+    }
+
+    // Try to find and delete the user by email
+    const deletedUser = await User.findOneAndDelete({ email });
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return a success message if the user is deleted
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete user', error: error.message });
+  }
+});
+
 module.exports = router;

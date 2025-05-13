@@ -35,7 +35,7 @@ router.post('/addCharacters', async (req, res) => {
   }
 });
 
-// Route to get all characters (limited to 10 for testing)
+// Route to get all characters
 router.get('/getCharacters', async (req, res) => {
   try {
     const charactersCollection = getCharactersCollection();
@@ -90,7 +90,7 @@ router.post('/addLightCones', async (req, res) => {
   }
 });
 
-// Route to get all light cones (limited to 10 for testing)
+// Route to get all light cones 
 router.get('/getLightCones', async (req, res) => {
   try {
     const lightConesCollection = getLightConesCollection();
@@ -141,11 +141,11 @@ router.post('/addMaterials', async (req, res) => {
   }
 });
 
-// Route to get all materials (limited to 10 for testing)
+// Route to get all materials 
 router.get('/getMaterials', async (req, res) => {
   try {
     const materialsCollection = getMaterialsCollection();
-    const materials = await materialsCollection.find({}).limit(10).toArray();
+    const materials = await materialsCollection.find({}).toArray();
     res.json(materials);
     console.log(`✅ Fetched Materials`);
   } catch (error) {
@@ -192,7 +192,7 @@ router.post('/addRelics', async (req, res) => {
   }
 });
 
-// Route to get all relics (limited to 10 for testing)
+// Route to get all relics 
 router.get('/getRelics', async (req, res) => {
   try {
     const relicsCollection = getRelicsCollection();
@@ -247,11 +247,11 @@ router.post('/addCurrencies', async (req, res) => {
   }
 });
 
-// Route to get all currencies (limited to 10 for testing)
+// Route to get all currencies 
 router.get('/getCurrencies', async (req, res) => {
   try {
     const currenciesCollection = getCurrenciesCollection();
-    const currencies = await currenciesCollection.find({}).limit(10).toArray();
+    const currencies = await currenciesCollection.find({}).toArray();
     res.json(currencies);
     console.log(`✅ Fetched Currencies`);
   } catch (error) {

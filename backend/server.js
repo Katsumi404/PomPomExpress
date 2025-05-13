@@ -47,12 +47,17 @@ async function startServer() {
     await connectDB();
     await connectMongoose();
 
-    app.listen(port, () => {
-      console.log(`✅ Server is running on port ${port}`);
-    });
+    if (process.env.NODE_ENV !== 'test') {
+      // Only start the server if we're not in test mode
+      app.listen(port, () => {
+        console.log(`✅ Server is running on port ${port}`);
+      });
+    }
   } catch (err) {
     console.error(`❌ Failed to connect to MongoDB`, err);
   }
 }
+
+module.exports = app;
 
 startServer();
